@@ -510,63 +510,54 @@ export default function App() {
                     exit={{ opacity: 0, y: 5 }}
                     className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-[400px] overflow-y-auto"
                   >
-                    {viewMode === 'advanced2' ? (
-                      // Search mode for Advanced 2
+                    {viewMode === 'advanced2' && inputValue.trim() !== '' ? (
+                      // Search results for Advanced 2 when typing
                       <>
-                        {inputValue.trim() === '' ? (
-                          <div className="px-4 py-8 text-center">
-                            <Search className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                            <p className="text-sm text-gray-500">Start typing to search for people</p>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 border-b border-gray-100">Search Results</div>
-                            {searchablePeople
-                              .filter(person => 
-                                person.names[0].toLowerCase().includes(inputValue.toLowerCase()) ||
-                                person.title?.toLowerCase().includes(inputValue.toLowerCase()) ||
-                                person.department?.toLowerCase().includes(inputValue.toLowerCase())
-                              )
-                              .map(person => (
-                                <button 
-                                  key={person.id}
-                                  onClick={() => {
-                                    const newPerson: Person = {
-                                      ...person,
-                                      id: Math.random().toString(36).substr(2, 9),
-                                    };
-                                    setPeople([...people, newPerson]);
-                                    setInputValue('');
-                                    setIsInputFocused(false);
-                                  }}
-                                  className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 border-b border-gray-100 last:border-0"
-                                >
-                                  <img 
-                                    src={person.avatar || `https://ui-avatars.com/api/?name=${person.names[0]}&background=random`} 
-                                    alt="" 
-                                    className="w-10 h-10 rounded-full object-cover"
-                                    referrerPolicy="no-referrer"
-                                  />
-                                  <div className="flex flex-col">
-                                    <span className="text-sm font-medium text-gray-900">{person.names[0]}</span>
-                                    <span className="text-xs text-gray-500">{person.title}, {person.department}</span>
-                                  </div>
-                                </button>
-                              ))}
-                            {searchablePeople.filter(person => 
-                              person.names[0].toLowerCase().includes(inputValue.toLowerCase()) ||
-                              person.title?.toLowerCase().includes(inputValue.toLowerCase()) ||
-                              person.department?.toLowerCase().includes(inputValue.toLowerCase())
-                            ).length === 0 && (
-                              <div className="px-4 py-8 text-center">
-                                <p className="text-sm text-gray-500">No people found</p>
+                        <div className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 border-b border-gray-100">Search Results</div>
+                        {searchablePeople
+                          .filter(person => 
+                            person.names[0].toLowerCase().includes(inputValue.toLowerCase()) ||
+                            person.title?.toLowerCase().includes(inputValue.toLowerCase()) ||
+                            person.department?.toLowerCase().includes(inputValue.toLowerCase())
+                          )
+                          .map(person => (
+                            <button 
+                              key={person.id}
+                              onClick={() => {
+                                const newPerson: Person = {
+                                  ...person,
+                                  id: Math.random().toString(36).substr(2, 9),
+                                };
+                                setPeople([...people, newPerson]);
+                                setInputValue('');
+                                setIsInputFocused(false);
+                              }}
+                              className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 border-b border-gray-100 last:border-0"
+                            >
+                              <img 
+                                src={person.avatar || `https://ui-avatars.com/api/?name=${person.names[0]}&background=random`} 
+                                alt="" 
+                                className="w-10 h-10 rounded-full object-cover"
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium text-gray-900">{person.names[0]}</span>
+                                <span className="text-xs text-gray-500">{person.title}, {person.department}</span>
                               </div>
-                            )}
-                          </>
+                            </button>
+                          ))}
+                        {searchablePeople.filter(person => 
+                          person.names[0].toLowerCase().includes(inputValue.toLowerCase()) ||
+                          person.title?.toLowerCase().includes(inputValue.toLowerCase()) ||
+                          person.department?.toLowerCase().includes(inputValue.toLowerCase())
+                        ).length === 0 && (
+                          <div className="px-4 py-8 text-center">
+                            <p className="text-sm text-gray-500">No people found</p>
+                          </div>
                         )}
                       </>
                     ) : (
-                      // Original suggestions for Default and Advanced modes
+                      // Suggestions for all modes (including Advanced 2 when empty)
                       <>
                         <div className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 border-b border-gray-100">Suggestions</div>
                         {[
