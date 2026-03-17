@@ -740,7 +740,25 @@ export default function App() {
                           {viewMode === 'advanced2' ? (
                             // Advanced 2 dropdown structure
                             <>
-                              {/* Section 1: View/Explore options */}
+                              {/* Section 1: Roles and View/Explore options */}
+                              <button 
+                                onClick={() => updateRole(person.id, 'Editor')}
+                                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-gray-900">Editor</span>
+                                  {person.role === 'Editor' && <CheckCircle2 className="w-4 h-4 text-[#7A005D]" />}
+                                </div>
+                              </button>
+                              <button 
+                                onClick={() => updateRole(person.id, 'Collaborator')}
+                                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-gray-900">Collaborator</span>
+                                  {person.role === 'Collaborator' && <CheckCircle2 className="w-4 h-4 text-[#7A005D]" />}
+                                </div>
+                              </button>
                               <button className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium">
                                 View as owner
                               </button>
@@ -753,7 +771,7 @@ export default function App() {
                               
                               {/* Section 2: Transfer ownership and Add expiration */}
                               <div className="border-t border-gray-100 my-2"></div>
-                              {person.role === 'Owner' && (
+                              {!person.isGroup && (
                                 <button 
                                   onClick={() => {
                                     if (!isOnlyOwner) {
