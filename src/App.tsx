@@ -25,17 +25,72 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-type Role = 'Owner' | 'Editor' | 'Collaborator' | 'Viewer';
+/** Matches access dropdown labels (screenshot); stored verbatim in the Access cell */
+type AccessLevel =
+  | 'Owner'
+  | 'Editor'
+  | 'Collaborator'
+  | 'Viewer'
+  | 'View as owner'
+  | 'View as viewer'
+  | 'Explore as owner';
 
 interface Person {
   id: string;
   names: string[];
-  role: Role;
+  role: AccessLevel;
   isGroup?: boolean;
   title?: string;
   department?: string;
   avatar?: string;
+  /** When set, ISO date string YYYY-MM-DD */
+  expirationDate?: string | null;
 }
+
+function addMonths(from: Date, months: number): Date {
+  const d = new Date(from.getTime());
+  const day = d.getDate();
+  d.setMonth(d.getMonth() + months);
+  if (d.getDate() < day) d.setDate(0);
+  return d;
+}
+
+function toIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function formatExpirationDisplay(iso: string): string {
+  const [y, mo, da] = iso.split('-').map(Number);
+  const dt = new Date(y, mo - 1, da);
+  return dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/** Default email verb for `{access type}` placeholder */
+function accessVerbForEmail(role: AccessLevel): 'collaborate' | 'edit' {
+  if (role === 'Collaborator') return 'collaborate';
+  return 'edit';
+}
+
+/** Phrase for "you can now …" when multiple recipients may have different access */
+function emailAccessPhrase(selected: Person[]): string {
+  if (selected.length === 0) return 'edit';
+  const verbs = [...new Set(selected.map((p) => accessVerbForEmail(p.role)))];
+  if (verbs.length === 1) return verbs[0];
+  return 'collaborate or edit based on your access';
+}
+
+const ACCESS_GROUPS_ORDER: AccessLevel[] = [
+  'Owner',
+  'Editor',
+  'Collaborator',
+  'Viewer',
+  'View as owner',
+  'View as viewer',
+  'Explore as owner',
+];
 
 /** Demo emails derived from display names (no backend in this UI prototype). */
 function deriveEmailFromDisplayName(name: string): string {
@@ -83,6 +138,11 @@ export default function App() {
   const [activeAccessDropdown, setActiveAccessDropdown] = useState<string | null>(null);
   const [transferTarget, setTransferTarget] = useState('');
   const [checkedRows, setCheckedRows] = useState<Set<string>>(new Set(['1']));
+  const [sharedFilename] = useState('Quarterly summary');
+
+  const [isEmailComposerOpen, setIsEmailComposerOpen] = useState(false);
+  const [emailRecipientIds, setEmailRecipientIds] = useState<Set<string>>(new Set());
+  const [emailCustomMessage, setEmailCustomMessage] = useState('');
   
   const [people, setPeople] = useState<Person[]>([
     { id: '1', names: ['Harry Porter'], role: 'Owner', isGroup: false, title: 'CEO', department: 'Leadership', avatar: 'https://i.pravatar.cc/150?u=harry' }
@@ -228,9 +288,9 @@ export default function App() {
       
       if (currentOwnerIndex !== -1 && targetPerson) {
         // Current owner becomes Editor
-        const oldOwner = { ...newPeople[currentOwnerIndex], role: 'Editor' as Role };
+        const oldOwner = { ...newPeople[currentOwnerIndex], role: 'Editor' as AccessLevel };
         // Target becomes Owner
-        const newOwner = { ...targetPerson, role: 'Owner' as Role };
+        const newOwner = { ...targetPerson, role: 'Owner' as AccessLevel };
         
         let updatedPeopleList: Person[];
         if (targetInPrev) {
@@ -348,9 +408,23 @@ export default function App() {
     setPeople(people.filter(p => p.id !== id));
   };
 
-  const updateRole = (id: string, role: Role) => {
+  const updateRole = (id: string, role: AccessLevel) => {
     setPeople(people.map(p => p.id === id ? { ...p, role } : p));
     setActiveAccessDropdown(null);
+  };
+
+  const setPersonExpiration = (id: string, iso: string | null) => {
+    setPeople((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, expirationDate: iso } : p))
+    );
+  };
+
+  const pickExpirationDate = (personId: string) => {
+    const el = document.getElementById(`expiry-input-${personId}`) as HTMLInputElement | null;
+    if (el) {
+      if (typeof el.showPicker === 'function') el.showPicker();
+      else el.click();
+    }
   };
 
   // Close dropdowns when clicking outside
@@ -379,6 +453,11 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const valid = new Set(people.map((p) => p.id));
+    setEmailRecipientIds((prev) => new Set([...prev].filter((id) => valid.has(id))));
+  }, [people]);
+
   const gridCols = viewMode === 'advanced' ? 'grid-cols-[1fr_120px_120px]' : viewMode === 'advanced2' ? 'grid-cols-[1fr_120px]' : 'grid-cols-[1fr_120px]';
 
   const handleCopyLink = async () => {
@@ -404,14 +483,25 @@ export default function App() {
     }
   };
 
-  const handleEmailAllWithAccess = () => {
-    const emails = allAccessEmails(people);
-    if (emails.length === 0) {
-      showToast('No email addresses');
+  const openEmailComposer = () => {
+    if (people.length === 0) {
+      showToast('No recipients with access');
       return;
     }
-    const subject = encodeURIComponent('Shared access');
-    window.location.href = `mailto:${emails.join(',')}?subject=${subject}`;
+    const all = new Set(people.map((p) => p.id));
+    setEmailRecipientIds(all);
+    const ownerName = people.find((p) => p.role === 'Owner')?.names.join(', ') ?? '{Username}';
+    const selectedList = people.filter((p) => all.has(p.id));
+    setEmailCustomMessage(
+      `${ownerName} shared ${sharedFilename} with you, you can now ${emailAccessPhrase(selectedList)}`
+    );
+    setIsEmailComposerOpen(true);
+  };
+
+  const sendComposedEmail = () => {
+    if (emailRecipientIds.size === 0) return;
+    setIsEmailComposerOpen(false);
+    showToast(`Message will be sent to ${emailRecipientIds.size} recipient(s)`);
   };
 
   return (
@@ -731,7 +821,7 @@ export default function App() {
               <div className="relative group/tooltip">
                 <button
                   type="button"
-                  onClick={handleEmailAllWithAccess}
+                  onClick={openEmailComposer}
                   aria-label="Email all with access"
                   className="text-gray-600 hover:text-gray-900"
                 >
@@ -757,6 +847,106 @@ export default function App() {
             </div>
           </div>
 
+          <AnimatePresence>
+            {isEmailComposerOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden mb-4 border border-gray-200 rounded-xl bg-[#fafafa]"
+              >
+                <div className="p-5 space-y-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-900">Choose recipients</h3>
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        Select people or groups to notify; everyone is selected by default.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsEmailComposerOpen(false)}
+                      className="p-1 rounded-full hover:bg-gray-200 text-gray-500 shrink-0"
+                      aria-label="Close email composer"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4 max-h-[280px] overflow-y-auto pr-1">
+                    {ACCESS_GROUPS_ORDER.map((accessLabel) => {
+                      const members = people.filter((p) => p.role === accessLabel);
+                      if (members.length === 0) return null;
+                      return (
+                        <div key={accessLabel}>
+                          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                            {accessLabel}{' '}
+                            <span className="text-gray-400 font-normal normal-case">({members.length})</span>
+                          </div>
+                          <div className="space-y-2 pl-1">
+                            {members.map((p) => (
+                              <label
+                                key={p.id}
+                                className="flex items-center gap-3 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-white border border-transparent hover:border-gray-200"
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="w-4 h-4 rounded border-gray-300 accent-[#7A005D]"
+                                  checked={emailRecipientIds.has(p.id)}
+                                  onChange={() => {
+                                    setEmailRecipientIds((prev) => {
+                                      const next = new Set(prev);
+                                      if (next.has(p.id)) next.delete(p.id);
+                                      else next.add(p.id);
+                                      return next;
+                                    });
+                                  }}
+                                />
+                                <span className="text-sm text-gray-800 truncate">{p.names.join(', ')}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-800">Custom message</label>
+                    <textarea
+                      value={emailCustomMessage}
+                      onChange={(e) => setEmailCustomMessage(e.target.value)}
+                      rows={4}
+                      className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7A005D]/30 focus:border-[#7A005D]"
+                      placeholder="Add an optional note…"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsEmailComposerOpen(false)}
+                      className="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-800 font-medium hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={emailRecipientIds.size === 0}
+                      onClick={sendComposedEmail}
+                      className={`px-6 py-2.5 rounded-xl font-semibold transition-colors ${
+                        emailRecipientIds.size === 0
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-[#7A005D] text-white hover:bg-[#60003D]'
+                      }`}
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className="border border-gray-200 rounded-xl overflow-visible">
             {/* Table Header */}
             <div className={`grid ${gridCols} px-4 py-3 bg-gray-50/50 border-b border-gray-200 text-sm font-medium text-gray-500`}>
@@ -774,11 +964,11 @@ export default function App() {
             {/* Table Row */}
             {people.map(person => (
               <div key={person.id} className={`grid ${gridCols} px-4 py-4 items-center hover:bg-gray-50 transition-colors group/row relative`}>
-                <div className="relative pr-20">
-                  <TagsCell names={person.names} role={person.role} />
-
-                  {/* Hover Icons at end of cell */}
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-3 opacity-0 group-hover/row:opacity-100 transition-opacity z-20 bg-inherit pl-2">
+                <div className="flex items-center gap-3 min-w-0 w-full">
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <TagsCell names={person.names} role={person.role} />
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3 opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 transition-opacity pointer-events-none group-hover/row:pointer-events-auto">
                     <div className="relative group/sub-tooltip">
                       <Pencil className="w-4 h-4 text-gray-400 cursor-pointer hover:text-gray-600" />
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-100 text-gray-900 text-xs font-medium rounded-xl opacity-0 invisible group-hover/sub-tooltip:opacity-100 group-hover/sub-tooltip:visible transition-all whitespace-nowrap shadow-lg border border-gray-200 z-50">
@@ -806,80 +996,100 @@ export default function App() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-end gap-1 relative w-full">
-                  <div className="relative" ref={person.id === activeAccessDropdown ? accessDropdownRef : null}>
-                    <button 
-                      onClick={() => {
-                        if (viewMode === 'advanced2') {
-                          setActiveAccessDropdown(activeAccessDropdown === person.id ? null : person.id);
-                        } else if (person.role !== 'Owner') {
-                          setActiveAccessDropdown(activeAccessDropdown === person.id ? null : person.id);
+                <div className="flex items-start justify-end gap-2 relative w-full min-w-0">
+                  <div className="flex flex-col items-end gap-1 min-w-0 flex-1">
+                    <div className="relative flex justify-end w-full" ref={person.id === activeAccessDropdown ? accessDropdownRef : null}>
+                      <button 
+                        type="button"
+                        onClick={() =>
+                          setActiveAccessDropdown(activeAccessDropdown === person.id ? null : person.id)
                         }
-                      }}
-                      className={`flex items-center gap-1 text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded transition-colors ${
-                        (viewMode === 'advanced2' || person.role !== 'Owner') ? 'cursor-pointer' : 'cursor-default'
-                      } justify-end`}
-                    >
-                      <span>{person.role}</span>
-                      <div className="w-4 h-4 flex items-center justify-center shrink-0">
-                        {(viewMode === 'advanced2' || person.role !== 'Owner') && <ChevronDown className="w-4 h-4 text-gray-400" />}
-                      </div>
-                    </button>
+                        className="flex items-center gap-1 text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded transition-colors cursor-pointer justify-end max-w-full border border-transparent hover:border-gray-100 min-w-0"
+                      >
+                        <span className="truncate text-right">{person.role}</span>
+                        <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        </div>
+                      </button>
 
-                    {/* Access Dropdown */}
-                    <AnimatePresence>
-                      {activeAccessDropdown === person.id && (
-                        <motion.div 
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 10 }}
-                          className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-[60]"
-                        >
-                          {viewMode === 'advanced2' ? (
-                            // Advanced 2 dropdown structure
-                            <>
-                              {/* Section 1: Roles and View/Explore options */}
+                      {/* Access Dropdown — same options in every view mode */}
+                      <AnimatePresence>
+                        {activeAccessDropdown === person.id && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-[60]"
+                          >
                               <button 
+                                type="button"
                                 onClick={() => updateRole(person.id, 'Owner')}
                                 className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
                               >
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between gap-2">
                                   <span className="text-sm font-medium text-gray-900">Owner</span>
-                                  {person.role === 'Owner' && <CheckCircle2 className="w-4 h-4 text-[#7A005D]" />}
+                                  {person.role === 'Owner' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
                                 </div>
                               </button>
                               <button 
+                                type="button"
                                 onClick={() => updateRole(person.id, 'Editor')}
                                 className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
                               >
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between gap-2">
                                   <span className="text-sm font-medium text-gray-900">Editor</span>
-                                  {person.role === 'Editor' && <CheckCircle2 className="w-4 h-4 text-[#7A005D]" />}
+                                  {person.role === 'Editor' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
                                 </div>
                               </button>
                               <button 
+                                type="button"
                                 onClick={() => updateRole(person.id, 'Collaborator')}
                                 className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
                               >
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between gap-2">
                                   <span className="text-sm font-medium text-gray-900">Collaborator</span>
-                                  {person.role === 'Collaborator' && <CheckCircle2 className="w-4 h-4 text-[#7A005D]" />}
+                                  {person.role === 'Collaborator' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
                                 </div>
                               </button>
-                              <button className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium">
-                                View as owner
+                              <button 
+                                type="button"
+                                onClick={() => updateRole(person.id, 'View as owner')}
+                                className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium flex items-center justify-between gap-2"
+                              >
+                                <span>View as owner</span>
+                                {person.role === 'View as owner' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
                               </button>
-                              <button className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium">
-                                View as viewer
+                              <button 
+                                type="button"
+                                onClick={() => updateRole(person.id, 'View as viewer')}
+                                className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium flex items-center justify-between gap-2"
+                              >
+                                <span>View as viewer</span>
+                                {person.role === 'View as viewer' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
                               </button>
-                              <button className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium">
-                                Explore as owner
+                              <button 
+                                type="button"
+                                onClick={() => updateRole(person.id, 'Explore as owner')}
+                                className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium flex items-center justify-between gap-2"
+                              >
+                                <span>Explore as owner</span>
+                                {person.role === 'Explore as owner' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
                               </button>
-                              
-                              {/* Section 2: Transfer ownership and Add expiration */}
+                              <button 
+                                type="button"
+                                onClick={() => updateRole(person.id, 'Viewer')}
+                                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-sm font-medium text-gray-900">Viewer</span>
+                                  {person.role === 'Viewer' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
+                                </div>
+                              </button>
+
                               <div className="border-t border-gray-100 my-2"></div>
                               {!person.isGroup && (
                                 <button 
+                                  type="button"
                                   onClick={() => {
                                     if (!isOnlyOwner) {
                                       setIsTransferModalOpen(true);
@@ -893,15 +1103,25 @@ export default function App() {
                                   Transfer ownership
                                 </button>
                               )}
-                              <button className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium">
-                                Add expiration
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  if (person.expirationDate) {
+                                    setPersonExpiration(person.id, null);
+                                  } else {
+                                    setPersonExpiration(person.id, toIsoDate(addMonths(new Date(), 1)));
+                                  }
+                                  setActiveAccessDropdown(null);
+                                }}
+                                className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium"
+                              >
+                                {person.expirationDate ? 'Remove expiration' : 'Add expiration'}
                               </button>
-                              
-                              {/* Section 3: Remove */}
                               {person.role !== 'Owner' && (
                                 <>
                                   <div className="border-t border-gray-100 my-2"></div>
                                   <button 
+                                    type="button"
                                     onClick={() => {
                                       removePerson(person.id);
                                       setActiveAccessDropdown(null);
@@ -912,56 +1132,39 @@ export default function App() {
                                   </button>
                                 </>
                               )}
-                            </>
-                          ) : (
-                            // Default and Advanced dropdown structure
-                            <>
-                              <button 
-                                onClick={() => updateRole(person.id, 'Editor')}
-                                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium text-gray-900">Editor</span>
-                                  {person.role === 'Editor' && <CheckCircle2 className="w-4 h-4 text-[#7A005D]" />}
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                                  Manage access, app navigation, add and remove pages in the app. Same as owner
-                                </p>
-                              </button>
-                              <button 
-                                onClick={() => updateRole(person.id, 'Collaborator')}
-                                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium text-gray-900">Collaborator</span>
-                                  {person.role === 'Collaborator' && <CheckCircle2 className="w-4 h-4 text-[#7A005D]" />}
-                                </div>
-                              </button>
-                              <button 
-                                onClick={() => updateRole(person.id, 'Viewer')}
-                                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium text-gray-900">Viewer</span>
-                                  {person.role === 'Viewer' && <CheckCircle2 className="w-4 h-4 text-[#7A005D]" />}
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                                  Access and search the app
-                                </p>
-                              </button>
-                              <div className="border-t border-gray-100 mt-2 pt-2">
-                                <button className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium">
-                                  Add expiration
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
 
-                  <div className="flex items-center justify-center w-8 shrink-0">
+                    {person.expirationDate && (
+                      <>
+                        <input
+                          id={`expiry-input-${person.id}`}
+                          type="date"
+                          className="sr-only"
+                          tabIndex={-1}
+                          aria-hidden
+                          value={person.expirationDate}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v) setPersonExpiration(person.id, v);
+                          }}
+                        />
+                        <div className="flex items-center justify-end gap-2 text-xs text-gray-500 text-right max-w-full flex-wrap">
+                          <span>Expires {formatExpirationDisplay(person.expirationDate)}</span>
+                          <button
+                            type="button"
+                            onClick={() => pickExpirationDate(person.id)}
+                            className="shrink-0 text-[#7A005D] font-semibold hover:underline"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                <div className="flex items-center justify-center w-8 shrink-0 self-start pt-1">
                     {person.role === 'Owner' && viewMode !== 'advanced2' && (
                       <div className="relative group/swap-tooltip">
                         <button 
