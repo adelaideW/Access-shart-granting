@@ -199,6 +199,29 @@ const ACCESS_GROUPS_ORDER: AccessLevel[] = [
   'Explore as owner',
 ];
 
+/** Buckets for Choose recipients: merges Viewer + View as viewer → single Viewer group */
+type EmailComposerBucket =
+  | 'Owner'
+  | 'Editor'
+  | 'Collaborator'
+  | 'Viewer'
+  | 'View as owner'
+  | 'Explore as owner';
+
+const EMAIL_COMPOSER_BUCKET_ORDER: EmailComposerBucket[] = [
+  'Owner',
+  'Editor',
+  'Collaborator',
+  'Viewer',
+  'View as owner',
+  'Explore as owner',
+];
+
+function emailComposerBucket(role: AccessLevel): EmailComposerBucket {
+  if (role === 'Viewer' || role === 'View as viewer') return 'Viewer';
+  return role as EmailComposerBucket;
+}
+
 type GeneralAccessScope = 'restricted' | 'company' | 'anyone_link';
 type LinkSharingRole = 'Viewer' | 'Collaborator' | 'Editor';
 
@@ -595,10 +618,10 @@ export default function App() {
 
   const gridCols =
     viewMode === 'advanced'
-      ? 'grid-cols-[1fr_120px_minmax(240px,240px)]'
+      ? 'grid-cols-[1fr_120px_minmax(200px,200px)]'
       : viewMode === 'advanced2'
-        ? 'grid-cols-[1fr_minmax(240px,240px)]'
-        : 'grid-cols-[1fr_minmax(240px,240px)]';
+        ? 'grid-cols-[1fr_minmax(200px,200px)]'
+        : 'grid-cols-[1fr_minmax(200px,200px)]';
 
   const handleCopyLink = async () => {
     try {
@@ -740,38 +763,54 @@ export default function App() {
                 Select people or groups to notify; everyone is selected by default.
               </p>
               <div className="space-y-4 max-h-[min(360px,50vh)] overflow-y-auto pr-1">
-                {ACCESS_GROUPS_ORDER.map((accessLabel) => {
-                  const members = people.filter((p) => p.role === accessLabel);
+                {EMAIL_COMPOSER_BUCKET_ORDER.map((bucket) => {
+                  const members = people.filter(
+                    (p) => emailComposerBucket(p.role) === bucket
+                  );
                   if (members.length === 0) return null;
+                  const ids = members.map((m) => m.id);
+                  const selectedInBucket = ids.filter((id) =>
+                    emailRecipientIds.has(id)
+                  ).length;
+                  const allInBucket =
+                    ids.length > 0 && selectedInBucket === ids.length;
+                  const someInBucket = selectedInBucket > 0 && !allInBucket;
                   return (
-                    <div key={accessLabel}>
+                    <div key={bucket}>
                       <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                        {accessLabel}{' '}
-                        <span className="text-gray-400 font-normal normal-case">({members.length})</span>
+                        {bucket.toUpperCase().replace(/\s+/g, ' ')}{' '}
+                        <span className="text-gray-400 font-normal normal-case">
+                          ({members.length})
+                        </span>
                       </div>
-                      <div className="space-y-2 pl-1">
-                        {members.map((p) => (
-                          <label
-                            key={p.id}
-                            className="flex items-center gap-3 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-gray-50 border border-transparent hover:border-gray-200"
-                          >
-                            <input
-                              type="checkbox"
-                              className="w-4 h-4 rounded border-gray-300 accent-[#7A005D]"
-                              checked={emailRecipientIds.has(p.id)}
-                              onChange={() => {
-                                setEmailRecipientIds((prev) => {
-                                  const next = new Set(prev);
-                                  if (next.has(p.id)) next.delete(p.id);
-                                  else next.add(p.id);
-                                  return next;
-                                });
-                              }}
-                            />
-                            <span className="text-sm text-gray-800">{p.names.join(', ')}</span>
-                          </label>
-                        ))}
-                      </div>
+                      <label className="flex items-start gap-3 cursor-pointer rounded-lg px-2 py-2 hover:bg-gray-50 border border-transparent hover:border-gray-200">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-[#7A005D] shrink-0"
+                          ref={(el) => {
+                            if (el) el.indeterminate = someInBucket;
+                          }}
+                          checked={allInBucket}
+                          onChange={() => {
+                            setEmailRecipientIds((prev) => {
+                              const next = new Set(prev);
+                              if (allInBucket) {
+                                ids.forEach((id) => next.delete(id));
+                              } else {
+                                ids.forEach((id) => next.add(id));
+                              }
+                              return next;
+                            });
+                          }}
+                        />
+                        <div className="flex min-w-0 flex-1 flex-col gap-1.5 text-sm text-gray-800">
+                          {members.map((p) => (
+                            <span key={p.id} className="leading-snug">
+                              {p.names.join(', ')}
+                            </span>
+                          ))}
+                        </div>
+                      </label>
                     </div>
                   );
                 })}
@@ -792,7 +831,7 @@ export default function App() {
                   onClick={() => setIsEmailComposerOpen(false)}
                   className="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-800 font-medium hover:bg-gray-50"
                 >
-                  Cancel
+                  Back
                 </button>
                 <button
                   type="button"
@@ -1086,37 +1125,45 @@ export default function App() {
           <div className="border border-gray-200 rounded-xl overflow-visible">
             {/* Table Header */}
             <div className={`grid ${gridCols} px-4 py-3 bg-gray-50/50 border-b border-gray-200 text-sm font-medium text-gray-500`}>
-              <div className="text-left">People</div>
+              <div className="flex min-w-0 items-center gap-4">
+                <span className="shrink-0">People</span>
+                <div className="flex shrink-0 items-center gap-3 text-gray-500">
+                  <div className="relative group/col-pencil">
+                    <Pencil
+                      className="h-4 w-4 cursor-pointer text-gray-400 hover:text-gray-600"
+                      aria-hidden
+                    />
+                    <div className="absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all invisible group-hover/col-pencil:visible group-hover/col-pencil:opacity-100">
+                      Edit
+                    </div>
+                  </div>
+                  <div className="relative group/col-preview">
+                    <Eye
+                      className="h-4 w-4 cursor-pointer text-gray-400 hover:text-gray-600"
+                      aria-hidden
+                    />
+                    <div className="absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all invisible group-hover/col-preview:visible group-hover/col-preview:opacity-100">
+                      Preview
+                    </div>
+                  </div>
+                </div>
+              </div>
               {viewMode === 'advanced' && (
                 <div className="flex items-center justify-center gap-1">
                   View as owner <HelpCircle className="w-3.5 h-3.5" />
                 </div>
               )}
-              <div className="flex items-center justify-end gap-1 pr-2 w-full min-w-0">
-                Access <HelpCircle className="w-3.5 h-3.5" />
+              <div className="flex w-full min-w-0 items-center justify-center gap-1 px-2 text-center">
+                Access <HelpCircle className="w-3.5 h-3.5 shrink-0" />
               </div>
             </div>
 
             {/* Table Row */}
             {people.map(person => (
               <div key={person.id} className={`grid ${gridCols} px-4 py-4 items-center hover:bg-gray-50 transition-colors group/row relative`}>
-                <div className="flex items-center gap-3 min-w-0 w-full">
+                <div className="flex min-w-0 w-full items-center">
                   <div className="min-w-0 flex-1 overflow-hidden">
                     <TagsCell names={person.names} role={person.role} />
-                  </div>
-                  <div className="flex shrink-0 items-center gap-3 opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 transition-opacity pointer-events-none group-hover/row:pointer-events-auto">
-                    <div className="relative group/sub-tooltip">
-                      <Pencil className="w-4 h-4 text-gray-400 cursor-pointer hover:text-gray-600" />
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-100 text-gray-900 text-xs font-medium rounded-xl opacity-0 invisible group-hover/sub-tooltip:opacity-100 group-hover/sub-tooltip:visible transition-all whitespace-nowrap shadow-lg border border-gray-200 z-50">
-                        Edit
-                      </div>
-                    </div>
-                    <div className="relative group/sub-tooltip">
-                      <Eye className="w-4 h-4 text-gray-400 cursor-pointer hover:text-gray-600" />
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-100 text-gray-900 text-xs font-medium rounded-xl opacity-0 invisible group-hover/sub-tooltip:opacity-100 group-hover/sub-tooltip:visible transition-all whitespace-nowrap shadow-lg border border-gray-200 z-50">
-                        Preview
-                      </div>
-                    </div>
                   </div>
                 </div>
                 
@@ -1132,24 +1179,27 @@ export default function App() {
                   </div>
                 )}
 
-                <div className="flex items-start justify-end gap-2 relative w-full min-w-0">
-                  <div className="flex flex-col items-end gap-1 min-w-0 flex-1">
-                    <div className="relative flex justify-end w-full" ref={person.id === activeAccessDropdown ? accessDropdownRef : null}>
+                <div className="relative flex w-full min-w-0 items-start justify-center gap-2">
+                  <div className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                    <div
+                      className="relative flex w-full justify-center"
+                      ref={person.id === activeAccessDropdown ? accessDropdownRef : null}
+                    >
                       <button 
                         type="button"
                         onClick={() =>
                           setActiveAccessDropdown(activeAccessDropdown === person.id ? null : person.id)
                         }
                         title={person.role}
-                        className={`flex items-center gap-0.5 text-sm text-gray-700 hover:bg-gray-100 px-2 py-1 rounded transition-colors cursor-pointer justify-end w-full min-w-0 max-w-[240px] ml-auto border ${
+                        className={`flex max-w-[200px] cursor-pointer items-center gap-0.5 rounded border px-2 py-1 text-sm text-gray-700 transition-colors hover:bg-gray-100 min-w-0 justify-center ${
                           activeAccessDropdown === person.id
-                            ? 'border-[#1a73e8] ring-1 ring-[#1a73e8]/20 bg-blue-50/30'
+                            ? 'border-[#1a73e8] bg-blue-50/30 ring-1 ring-[#1a73e8]/20'
                             : 'border-transparent hover:border-gray-200'
                         }`}
                       >
-                        <span className="truncate text-right flex-1 min-w-0">{person.role}</span>
-                        <div className="w-4 h-4 flex items-center justify-center shrink-0 pl-0.5">
-                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        <span className="min-w-0 flex-1 truncate text-center">{person.role}</span>
+                        <div className="flex h-4 w-4 shrink-0 items-center justify-center pl-0.5">
+                          <ChevronDown className="h-4 w-4 text-gray-400" />
                         </div>
                       </button>
 
@@ -1160,7 +1210,7 @@ export default function App() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
-                            className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-[60]"
+                            className="absolute left-1/2 top-full z-[60] mt-2 w-72 -translate-x-1/2 rounded-xl border border-gray-200 bg-white py-2 shadow-2xl"
                           >
                               <button 
                                 type="button"
@@ -1279,7 +1329,7 @@ export default function App() {
                     </div>
 
                     {person.expirationDate && (
-                      <div className="relative flex items-center justify-end gap-2 text-xs text-gray-500 max-w-full flex-wrap">
+                      <div className="relative flex max-w-full flex-wrap items-center justify-center gap-2 text-xs text-gray-500">
                         <span className="text-gray-500">Expires</span>
                         <button
                           type="button"
@@ -1306,7 +1356,7 @@ export default function App() {
                         {calendarOpenPersonId === person.id && (
                           <div
                             ref={expirationCalendarPopoverRef}
-                            className="absolute right-0 top-full mt-2 z-[85]"
+                            className="absolute left-1/2 top-full z-[85] mt-2 -translate-x-1/2"
                           >
                             <ExpirationCalendarPopover
                               valueIso={person.expirationDate}
