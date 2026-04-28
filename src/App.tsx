@@ -438,6 +438,32 @@ export default function App() {
       } satisfies BulkImportRow;
     });
     setBulkImportRows(rows);
+    setBulkInputValue('');
+  };
+
+  const loadCsvDemoRows = () => {
+    const csvSeed = [
+      'E1001',
+      'department@company.com',
+      'application.recruiter@company.com',
+      'unknown.user@outside.com',
+    ].join('\n');
+    setBulkInputValue(csvSeed);
+    const parsed = csvSeed.split(/[\n,]+/).map((token) => token.trim()).filter(Boolean);
+    const rows = parsed.map((token, idx) => {
+      const identifierType = detectBulkIdentifierType(token);
+      const matched = findMatchedPerson(token, identifierType);
+      return {
+        id: `${Date.now()}-csv-${idx}`,
+        original: token,
+        identifierType,
+        matchedPersonId: matched?.id ?? null,
+        query: '',
+        dropdownOpen: false,
+      } satisfies BulkImportRow;
+    });
+    setBulkImportRows(rows);
+    setBulkInputValue('');
   };
 
   // Component for tags cell with overflow detection
@@ -834,7 +860,7 @@ export default function App() {
     left.textContent = '[x]';
 
     const middle = document.createElement('span');
-    middle.className = 'ml-2 px-2 py-0.5 text-[12px] text-gray-900';
+    middle.className = 'ml-1 px-2 py-0.5 text-[12px] text-gray-900';
     middle.textContent = labelMap[option];
 
     const remove = document.createElement('button');
@@ -1064,11 +1090,11 @@ export default function App() {
                 })}
               </div>
               <div className="space-y-3">
-                <div className="inline-flex h-12 w-[280px] max-w-full items-center rounded-2xl border border-gray-300 p-0.5">
+                <div className="inline-flex h-6 w-[200px] max-w-full items-center rounded-xl border border-gray-300 p-0.5">
                   <button
                     type="button"
                     onClick={() => setEmailComposerTab('edit')}
-                    className={`h-full w-1/2 rounded-l-xl px-6 text-sm font-semibold transition-colors ${
+                    className={`h-full w-1/2 rounded-l-lg px-4 text-sm font-semibold transition-colors ${
                       emailComposerTab === 'edit'
                         ? 'bg-[#8b0069] text-white'
                         : 'bg-white text-[#475467] hover:bg-gray-50'
@@ -1079,7 +1105,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setEmailComposerTab('preview')}
-                    className={`h-full w-1/2 rounded-r-xl px-6 text-sm font-semibold transition-colors ${
+                    className={`h-full w-1/2 rounded-r-lg px-4 text-sm font-semibold transition-colors ${
                       emailComposerTab === 'preview'
                         ? 'bg-[#8b0069] text-white'
                         : 'bg-white text-[#475467] hover:bg-gray-50'
@@ -1606,11 +1632,13 @@ export default function App() {
 
                 <div className="relative flex w-full min-w-0 items-start justify-start gap-4">
                   <div className="flex min-w-0 flex-1 flex-col items-start gap-0">
-                    <div
-                      className="relative flex w-full justify-start"
-                      ref={person.id === activeAccessDropdown ? accessDropdownRef : null}
-                    >
-                      <button 
+                    <div className="relative flex w-full justify-start" ref={person.id === activeAccessDropdown ? accessDropdownRef : null}>
+                      {person.role === 'Owner' ? (
+                        <div className="flex max-w-[200px] items-center rounded py-1 text-sm text-gray-700 min-w-0 justify-start text-left">
+                          <span className="min-w-0 flex-1 truncate text-left">Owner</span>
+                        </div>
+                      ) : (
+                      <button
                         type="button"
                         onClick={() =>
                           setActiveAccessDropdown(activeAccessDropdown === person.id ? null : person.id)
@@ -1627,10 +1655,11 @@ export default function App() {
                           <ChevronDown className="h-4 w-4 text-gray-400" />
                         </div>
                       </button>
+                      )}
 
                       {/* Access Dropdown — same options in every view mode */}
                       <AnimatePresence>
-                        {activeAccessDropdown === person.id && (
+                        {activeAccessDropdown === person.id && person.role !== 'Owner' && (
                           <motion.div 
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -1715,9 +1744,17 @@ export default function App() {
                                   }
                                   setActiveAccessDropdown(null);
                                 }}
-                                className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium"
+                                className="group w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium"
                               >
-                                {person.expirationDate ? 'Remove expiration' : 'Add expiration'}
+                                <span className="inline-flex items-center gap-1.5">
+                                  {person.expirationDate ? 'Remove expiration' : 'Add expiration'}
+                                  <span className="relative inline-flex items-center group/exp-help">
+                                    <HelpCircle className="h-3.5 w-3.5 text-gray-400" />
+                                    <span className="pointer-events-none invisible absolute left-0 top-full z-[300] mt-2 w-[340px] rounded-lg border border-gray-200 bg-white p-2 text-xs leading-relaxed text-gray-700 opacity-0 shadow-xl transition-all group-hover/exp-help:visible group-hover/exp-help:opacity-100">
+                                      Once access expires, this group will no longer be able to access the document. If the artifact is currently set to "Company-wide" or "Anyone with the link," it will automatically switch to "Restricted" after expiration.
+                                    </span>
+                                  </span>
+                                </span>
                               </button>
                               )}
                               {person.role !== 'Owner' && (
@@ -1936,6 +1973,10 @@ export default function App() {
                               type="button"
                               onClick={() => {
                                 setGeneralAccessScope(opt.key);
+                                if (opt.key === 'restricted') {
+                                  setGeneralLinkExpirationIso(null);
+                                  setGeneralLinkAccessRole('View as viewer');
+                                }
                                 setGeneralScopeDropdownOpen(false);
                               }}
                               className="w-full px-4 py-2.5 flex items-start justify-between gap-3 text-left hover:bg-[#EDEBE7]"
@@ -2076,9 +2117,17 @@ export default function App() {
                                   }
                                   setGeneralRoleDropdownOpen(false);
                                 }}
-                                className="w-full px-4 py-3 text-left text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50"
+                                className="group w-full px-4 py-3 text-left text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50"
                               >
-                                {generalLinkExpirationIso ? 'Remove expiration' : 'Add expiration'}
+                                <span className="inline-flex items-center gap-1.5">
+                                  {generalLinkExpirationIso ? 'Remove expiration' : 'Add expiration'}
+                                  <span className="relative inline-flex items-center group/general-exp-help">
+                                    <HelpCircle className="h-3.5 w-3.5 text-gray-400" />
+                                    <span className="pointer-events-none invisible absolute left-0 top-full z-[300] mt-2 w-[340px] rounded-lg border border-gray-200 bg-white p-2 text-xs leading-relaxed text-gray-700 opacity-0 shadow-xl transition-all group-hover/general-exp-help:visible group-hover/general-exp-help:opacity-100">
+                                      Once access expires, this group will no longer be able to access the document. If the artifact is currently set to "Company-wide" or "Anyone with the link," it will automatically switch to "Restricted" after expiration.
+                                    </span>
+                                  </span>
+                                </span>
                               </button>
 
                           </motion.div>
@@ -2166,7 +2215,14 @@ export default function App() {
                       onChange={(e) => setBulkInputValue(e.target.value)}
                       className="w-full h-48 p-4 bg-transparent outline-none resize-none text-gray-700 placeholder-gray-400"
                     />
-                    <div className="absolute right-4 bottom-4">
+                    <div className="absolute right-4 bottom-4 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={loadCsvDemoRows}
+                        className="px-4 py-1.5 border border-gray-300 bg-white text-gray-700 font-medium rounded-lg text-sm hover:bg-gray-50"
+                      >
+                        Upload CSV
+                      </button>
                       <button
                         type="button"
                         onClick={runBulkImportMatch}
@@ -2194,6 +2250,9 @@ export default function App() {
                         <tbody>
                           {bulkImportRows.map((row) => {
                             const matched = bulkDirectory.find((p) => p.id === row.matchedPersonId) ?? null;
+                            const duplicateMatched =
+                              row.matchedPersonId &&
+                              bulkImportRows.filter((r) => r.matchedPersonId === row.matchedPersonId).length > 1;
                             const filteredPeople = bulkDirectory.filter((p) =>
                               row.query.trim() === ''
                                 ? true
@@ -2306,6 +2365,15 @@ export default function App() {
                                   </div>
                                 </td>
                                 <td className="px-4 py-3">
+                                  <div className="flex items-center justify-end gap-2">
+                                  {duplicateMatched && (
+                                    <div className="relative group/dup-warning">
+                                      <AlertCircle className="h-4 w-4 text-amber-500" />
+                                      <div className="invisible absolute bottom-full right-0 z-[280] mb-2 w-64 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 opacity-0 shadow-lg transition-all group-hover/dup-warning:visible group-hover/dup-warning:opacity-100">
+                                        This person is already matched to another address. Use unique matches per row.
+                                      </div>
+                                    </div>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={() => setBulkImportRows((prev) => prev.filter((item) => item.id !== row.id))}
@@ -2314,16 +2382,49 @@ export default function App() {
                                   >
                                     <X className="h-4 w-4" />
                                   </button>
+                                  </div>
                                 </td>
                               </tr>
                             );
                           })}
+                          <tr className="border-t border-gray-100">
+                            <td colSpan={3} className="px-4 py-3">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setBulkImportRows((prev) => [
+                                    ...prev,
+                                    {
+                                      id: `${Date.now()}-manual`,
+                                      original: '',
+                                      identifierType: 'email',
+                                      matchedPersonId: null,
+                                      query: '',
+                                      dropdownOpen: false,
+                                    },
+                                  ])
+                                }
+                                className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                              >
+                                <CirclePlus className="h-4 w-4" />
+                                Add row
+                              </button>
+                            </td>
+                          </tr>
                         </tbody>
                       </table>
                     </div>
                   )}
                 </div>
               </div>
+            </div>
+            <div className="border-t border-gray-200 px-8 py-4 flex justify-end">
+              <button
+                type="button"
+                className="px-6 py-2.5 rounded-lg bg-[#7A005D] text-white font-semibold hover:bg-[#60003D] transition-colors"
+              >
+                Add
+              </button>
             </div>
           </motion.div>
           </motion.div>
