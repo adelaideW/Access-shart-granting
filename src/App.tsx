@@ -227,37 +227,39 @@ function generalAccessSubtitle(
     return 'Only people with access can open with this link.';
   }
   const atCompany = `Anyone at ${organizationName}`;
+  const roleVerb =
+    linkRole === 'Owner'
+      ? 'manage as owner'
+      : linkRole === 'Editor'
+        ? 'edit'
+        : linkRole === 'Collaborator'
+          ? 'collaborate'
+          : linkRole === 'View as owner'
+            ? 'view as owner'
+            : linkRole === 'View as viewer'
+              ? 'view'
+              : 'explore as owner';
   if (scope === 'company') {
     switch (linkRole) {
       case 'Owner':
-        return `${atCompany} with the link holds owner-level access to this resource.`;
       case 'Editor':
-        return `${atCompany} with the link can edit.`;
       case 'Collaborator':
-        return `${atCompany} with the link can collaborate.`;
       case 'View as owner':
-        return `${atCompany} with the link opens in view mode as owner.`;
       case 'View as viewer':
-        return `${atCompany} with the link opens in view mode as a viewer would.`;
       case 'Explore as owner':
-        return `${atCompany} with the link can explore as owner.`;
+        return `${atCompany} with the link can ${roleVerb}.`;
       default:
         return `${atCompany} with the link can collaborate.`;
     }
   }
   switch (linkRole) {
     case 'Owner':
-      return 'Anyone on the internet with the link receives owner-like access.';
     case 'Editor':
-      return 'Anyone on the internet with the link can edit.';
     case 'Collaborator':
-      return 'Anyone on the internet with the link can collaborate.';
     case 'View as owner':
-      return 'Anyone on the internet with the link views as owner.';
     case 'View as viewer':
-      return 'Anyone on the internet with the link views as a viewer would.';
     case 'Explore as owner':
-      return 'Anyone on the internet with the link can explore as owner.';
+      return `Anyone on the internet with the link can ${roleVerb}.`;
     default:
       return 'Anyone on the internet with the link can collaborate.';
   }
@@ -445,7 +447,7 @@ export default function App() {
         {!isSingle && names.length > 1 && (
           <>
             <div className="pointer-events-none absolute inset-0 z-10 cursor-help" aria-hidden />
-            <div className="absolute left-0 bottom-full mb-2 p-4 bg-[#111827] text-white rounded-2xl opacity-0 invisible group-hover/tags-cell:opacity-100 group-hover/tags-cell:visible transition-all z-50 w-80 shadow-2xl border border-white/10 pointer-events-none">
+            <div className="absolute left-0 bottom-full mb-2 p-4 bg-[#111827] text-white rounded-2xl opacity-0 invisible group-hover/tags-cell:opacity-100 group-hover/tags-cell:visible transition-all z-[220] w-80 shadow-2xl border border-white/10 pointer-events-none">
               <div className="font-bold text-sm mb-2">All people/groups:</div>
               <div className="h-[1px] bg-white/10 mb-3" />
               <div className="flex flex-wrap gap-2">
@@ -694,18 +696,18 @@ export default function App() {
   };
 
   const fakeRoster = [
-    { username: 'Avery Lee', role: 'Product Manager' },
-    { username: 'Noah Kim', role: 'Software Engineer' },
-    { username: 'Riley Patel', role: 'Data Analyst' },
-    { username: 'Jordan Smith', role: 'Designer' },
-    { username: 'Taylor Nguyen', role: 'Operations' },
-    { username: 'Skyler Brown', role: 'Legal' },
-    { username: 'Casey Johnson', role: 'Sales' },
-    { username: 'Morgan Davis', role: 'Finance' },
+    { username: 'Avery Lee', role: 'Product Manager', avatar: 'https://i.pravatar.cc/120?u=avery' },
+    { username: 'Noah Kim', role: 'Software Engineer', avatar: 'https://i.pravatar.cc/120?u=noah' },
+    { username: 'Riley Patel', role: 'Data Analyst', avatar: 'https://i.pravatar.cc/120?u=riley' },
+    { username: 'Jordan Smith', role: 'Designer', avatar: 'https://i.pravatar.cc/120?u=jordan' },
+    { username: 'Taylor Nguyen', role: 'Operations', avatar: 'https://i.pravatar.cc/120?u=taylor' },
+    { username: 'Skyler Brown', role: 'Legal', avatar: 'https://i.pravatar.cc/120?u=skyler' },
+    { username: 'Casey Johnson', role: 'Sales', avatar: 'https://i.pravatar.cc/120?u=casey' },
+    { username: 'Morgan Davis', role: 'Finance', avatar: 'https://i.pravatar.cc/120?u=morgan' },
   ];
 
   const previewRows = (() => {
-    if (!previewDrawer) return [] as { username: string; role: string; accessType: AccessLevel }[];
+    if (!previewDrawer) return [] as { username: string; role: string; accessType: AccessLevel; avatar: string }[];
     const targetPerson =
       previewDrawer.mode === 'row'
         ? people.find((p) => p.id === previewDrawer.personId)
@@ -716,6 +718,7 @@ export default function App() {
       username: entry.username,
       role: entry.role,
       accessType,
+      avatar: entry.avatar,
     }));
   })();
 
@@ -1176,7 +1179,7 @@ export default function App() {
 
           <div className="border border-gray-200 rounded-xl overflow-visible">
             {/* Table Header */}
-            <div className={`grid ${gridCols} px-4 py-3 bg-gray-50/50 border-b border-gray-200 text-sm font-medium text-gray-500`}>
+            <div className={`grid ${gridCols} gap-x-6 px-6 py-3 bg-gray-50/50 border-b border-gray-200 text-sm font-medium text-gray-500`}>
               <div className="flex min-w-0 items-center gap-4">
                 <span className="shrink-0">People</span>
               </div>
@@ -1192,9 +1195,9 @@ export default function App() {
 
             {/* Table Row */}
             {people.map(person => (
-              <div key={person.id} className={`grid ${gridCols} px-4 py-4 items-center hover:bg-gray-50 transition-colors group/row relative`}>
+              <div key={person.id} className={`grid ${gridCols} gap-x-6 px-6 py-4 items-center hover:bg-gray-50 transition-colors group/row relative`}>
                 <div className="flex min-w-0 w-full items-center">
-                  <div className="min-w-0 flex-1 overflow-hidden">
+                  <div className="min-w-0 flex-1">
                     <TagsCell names={person.names} />
                   </div>
                   <div className="relative ml-2 flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover/row:opacity-100">
@@ -1500,14 +1503,13 @@ export default function App() {
                 </div>
                 <div className="flex-1 flex items-center gap-2 min-w-0">
                   <div className="flex-1 min-w-0 relative">
-                    <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Scope</div>
                     <button
                       type="button"
                       onClick={() => {
                         setGeneralScopeDropdownOpen((o) => !o);
                         setGeneralRoleDropdownOpen(false);
                       }}
-                      className="w-full text-left rounded-lg border border-gray-300 px-3 py-2 hover:border-[#1a73e8] transition-colors"
+                      className="w-full text-left rounded-lg px-0 py-0.5 hover:opacity-90 transition-opacity"
                     >
                       <div className="flex items-start justify-between gap-1 min-w-0">
                         <div className="min-w-0 flex-1 pr-1">
@@ -1616,7 +1618,6 @@ export default function App() {
 
                   {(generalAccessScope === 'company' || generalAccessScope === 'anyone_link') && (
                     <div ref={generalRoleDropdownRef} className="relative shrink-0 self-start">
-                      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Access type</div>
                       <button
                         type="button"
                         onClick={() => {
@@ -1798,12 +1799,20 @@ export default function App() {
       {/* Bulk Add Overlay */}
       <AnimatePresence>
         {isBulkAddOpen && (
-          <motion.div 
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[180] bg-black/40"
+            onClick={() => setIsBulkAddOpen(false)}
+          >
+            <motion.div 
             initial={{ opacity: 0, x: '100%' }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-0 bg-white z-[100] flex flex-col"
+            className="fixed right-0 top-0 h-full w-full bg-white shadow-2xl md:max-w-5xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Bulk Add Header */}
             <div className="px-8 py-6 flex items-center justify-between border-b border-gray-100">
@@ -1837,6 +1846,7 @@ export default function App() {
                 </div>
               </div>
             </div>
+          </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1929,7 +1939,17 @@ export default function App() {
                     <tbody>
                       {previewRows.map((row) => (
                         <tr key={`${row.username}-${row.role}`} className="border-t border-gray-100 text-sm text-gray-800">
-                          <td className="px-4 py-3">{row.username}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2.5">
+                              <img
+                                src={row.avatar}
+                                alt=""
+                                className="h-7 w-7 rounded-full object-cover"
+                                referrerPolicy="no-referrer"
+                              />
+                              <span>{row.username}</span>
+                            </div>
+                          </td>
                           <td className="px-4 py-3">{row.role}</td>
                           <td className="px-4 py-3">{row.accessType}</td>
                         </tr>
