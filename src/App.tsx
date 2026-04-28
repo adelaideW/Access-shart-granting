@@ -17,7 +17,6 @@ import {
   Globe,
   Building2,
   Check,
-  ArrowLeft,
   HelpCircle,
   ChevronRight,
   CheckCircle2,
@@ -299,7 +298,6 @@ export default function App() {
   /** Label for the middle option (maps to product “{Company}” scope) */
   const organizationDisplayName = 'Acme Corp';
   const [isInputFocused, setIsInputFocused] = useState(false);
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
   const [selectedChips, setSelectedChips] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -449,12 +447,12 @@ export default function App() {
         {!isSingle && names.length > 1 && (
           <>
             <div className="pointer-events-none absolute inset-0 z-10 cursor-help" aria-hidden />
-            <div className="absolute left-0 bottom-full mb-2 p-4 bg-[#111827] text-white rounded-2xl opacity-0 invisible group-hover/tags-cell:opacity-100 group-hover/tags-cell:visible transition-all z-[220] w-80 shadow-2xl border border-white/10 pointer-events-none">
+            <div className="absolute left-0 bottom-full mb-2 p-4 bg-[#EDEBE7] text-[#1f2937] rounded-2xl opacity-0 invisible group-hover/tags-cell:opacity-100 group-hover/tags-cell:visible transition-all z-[220] w-80 shadow-2xl border border-gray-300 pointer-events-none">
               <div className="font-bold text-sm mb-2">All people/groups:</div>
-              <div className="h-[1px] bg-white/10 mb-3" />
+              <div className="h-[1px] bg-gray-300 mb-3" />
               <div className="flex flex-wrap gap-2">
                 {names.map((name, idx) => (
-                  <div key={idx} className="bg-[#374151] px-3 py-1.5 rounded-lg text-xs font-medium text-white">
+                  <div key={idx} className="bg-[#d1d5db] px-3 py-1.5 rounded-lg text-xs font-medium text-[#1f2937]">
                     {name}
                   </div>
                 ))}
@@ -596,9 +594,6 @@ export default function App() {
     function handleClickOutside(event: MouseEvent) {
       if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
         setIsInputFocused(false);
-      }
-      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
-        setIsMoreMenuOpen(false);
       }
       if (accessDropdownRef.current && !accessDropdownRef.current.contains(event.target as Node)) {
         setActiveAccessDropdown(null);
@@ -795,16 +790,8 @@ export default function App() {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-[744px] border border-gray-200 z-10 relative">
         {isEmailComposerOpen ? (
           <>
-            <div className="px-6 pt-6 pb-4 flex items-center gap-3 border-b border-gray-100">
-              <button
-                type="button"
-                onClick={() => setIsEmailComposerOpen(false)}
-                className="flex items-center gap-2 text-sm font-medium text-[#7A005D] hover:bg-gray-100 rounded-lg px-2 py-1.5 -ml-2 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 shrink-0" />
-                Back
-              </button>
-              <h1 className="text-2xl font-semibold text-gray-900 flex-1 text-center pr-10">Choose recipients</h1>
+            <div className="px-6 pt-6 pb-4 flex items-center border-b border-gray-100">
+              <h1 className="text-2xl font-semibold text-gray-900 flex-1 text-center">Email recipients</h1>
               <button
                 type="button"
                 onClick={() => setIsEmailComposerOpen(false)}
@@ -814,7 +801,7 @@ export default function App() {
                 <X className="w-6 h-6 text-gray-500" />
               </button>
             </div>
-            <div className="px-6 py-6 space-y-5">
+            <div className="px-6 py-6 space-y-5 max-h-[78vh] overflow-y-auto">
               <p className="text-sm text-gray-500 -mt-2">
                 Select people or groups to notify; everyone is selected by default.
               </p>
@@ -873,11 +860,11 @@ export default function App() {
                 })}
               </div>
               <div className="space-y-3">
-                <div className="grid h-10 max-w-[270px] grid-cols-2 rounded-lg border border-gray-300 p-0.5">
+                <div className="inline-flex h-10 max-w-fit items-center rounded-lg border border-gray-300 p-0.5">
                   <button
                     type="button"
                     onClick={() => setEmailComposerTab('edit')}
-                    className={`rounded-md text-sm font-normal transition-colors ${
+                    className={`rounded-md px-9 text-sm font-normal transition-colors ${
                       emailComposerTab === 'edit'
                         ? 'bg-[#8b0069] text-white'
                         : 'text-gray-800 hover:bg-gray-50'
@@ -888,7 +875,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setEmailComposerTab('preview')}
-                    className={`rounded-md text-sm font-normal transition-colors ${
+                    className={`rounded-md px-9 text-sm font-normal transition-colors ${
                       emailComposerTab === 'preview'
                         ? 'bg-[#8b0069] text-white'
                         : 'text-gray-800 hover:bg-gray-50'
@@ -914,12 +901,18 @@ export default function App() {
                     Body<span className="text-red-500">*</span>
                   </label>
                   <div className="rounded-lg border border-gray-300 overflow-hidden">
-                  <div className="flex flex-wrap items-center gap-2 border-b border-gray-300 px-4 py-2.5 text-base text-gray-700">
+                  <div className="space-y-2 border-b border-gray-300 px-4 py-2.5 text-base text-gray-700">
+                    <div className="flex flex-wrap items-center gap-2">
                     <button type="button" className="hover:text-gray-900">↩</button>
                     <button type="button" className="hover:text-gray-900">↪</button>
                     <span className="text-gray-300">|</span>
                     <button type="button" className="font-semibold hover:text-gray-900">B</button>
                     <button type="button" className="italic hover:text-gray-900">/</button>
+                    <button type="button" className="hover:text-gray-900">⋯</button>
+                    <span className="text-gray-300">|</span>
+                    <button type="button" className="hover:text-gray-900">A</button>
+                    <button type="button" className="hover:text-gray-900">🖍</button>
+                    <button type="button" className="hover:text-gray-900">⊘</button>
                     <span className="text-gray-300">|</span>
                     <button type="button" className="text-sm px-3 py-1 rounded-lg border border-gray-300 bg-white">Normal text</button>
                     <span className="text-gray-300">|</span>
@@ -927,10 +920,21 @@ export default function App() {
                     <button type="button" className="text-sm px-2 py-1 rounded-lg border border-gray-300 bg-white">15</button>
                     <button type="button" className="hover:text-gray-900">+</button>
                     <span className="text-gray-300">|</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                    <button type="button" className="hover:text-gray-900">☰</button>
+                    <button type="button" className="hover:text-gray-900">☷</button>
+                    <button type="button" className="hover:text-gray-900">≡</button>
+                    <button type="button" className="hover:text-gray-900">✓</button>
+                    <span className="text-gray-300">|</span>
+                    <button type="button" className="hover:text-gray-900">🔗</button>
+                    <button type="button" className="hover:text-gray-900">🖼</button>
+                    <button type="button" className="hover:text-gray-900">⊕</button>
                     <button type="button" className="ml-auto text-sm px-4 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-700">⚡ Insert variable</button>
+                    </div>
                   </div>
 
-                  <div className="min-h-[220px] p-6 text-sm text-gray-800">
+                  <div className="h-[240px] min-h-[240px] resize-y overflow-auto p-6 text-sm text-gray-800">
                     {emailComposerTab === 'preview' ? (
                       <div className="leading-relaxed">
                         <span>{emailCustomMessage}</span>
@@ -1028,40 +1032,22 @@ export default function App() {
               </div>
               
               <div className="absolute right-2 top-2 flex items-center gap-1" ref={moreMenuRef}>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsMoreMenuOpen(!isMoreMenuOpen);
-                  }}
-                  className="p-1 hover:bg-gray-100 rounded transition-colors"
-                >
-                  <MoreVertical className="w-5 h-5 text-gray-400 cursor-pointer" />
-                </button>
-                
-                {/* More Menu Dropdown */}
-                <AnimatePresence>
-                  {isMoreMenuOpen && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50 cursor-default"
-                    >
-                      <button 
-                        onClick={() => {
-                          setIsBulkAddOpen(true);
-                          setIsMoreMenuOpen(false);
-                        }}
-                        className="w-full text-left group"
-                      >
-                        <h3 className="font-semibold text-gray-900 text-lg">Bulk add</h3>
-                        <p className="text-sm text-gray-500 mt-1 leading-snug">
-                          Add a list of employees using names, IDs, or email addresses
-                        </p>
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <div className="relative group/bulk-tooltip">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsBulkAddOpen(true);
+                    }}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-500"
+                    aria-label="Bulk add list"
+                  >
+                    <span className="inline-block text-lg leading-none">⋮</span>
+                  </button>
+                  <div className="invisible absolute bottom-full right-0 z-50 mb-2 w-72 rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/bulk-tooltip:visible group-hover/bulk-tooltip:opacity-100">
+                    Bulk add a list of employees using names, IDs, or email addresses
+                  </div>
+                </div>
               </div>
 
               {/* Input Dropdown */}
@@ -1346,8 +1332,8 @@ export default function App() {
                   </div>
                 )}
 
-                <div className="relative flex w-full min-w-0 items-start justify-start gap-2">
-                  <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                <div className="relative flex w-full min-w-0 items-start justify-start gap-4">
+                  <div className="flex min-w-0 flex-1 flex-col items-start gap-4">
                     <div
                       className="relative flex w-full justify-start"
                       ref={person.id === activeAccessDropdown ? accessDropdownRef : null}
@@ -1502,7 +1488,7 @@ export default function App() {
                               setPersonExpiration(person.id, null);
                               setCalendarOpenPersonId(null);
                             }}
-                            className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-[#7A005D]"
+                            className="shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-[#DC2626]"
                             aria-label="Remove expiration"
                           >
                             <X className="h-4 w-4" />
@@ -1575,7 +1561,7 @@ export default function App() {
                     <Globe className="w-[18px] h-[18px] text-[#2e7d32]" strokeWidth={2.2} />
                   )}
                 </div>
-                <div className="flex-1 flex items-center gap-2 min-w-0">
+                <div className="flex-1 flex items-start gap-4 min-w-0">
                   <div className="flex-1 min-w-0 relative">
                     <button
                       type="button"
@@ -1602,53 +1588,6 @@ export default function App() {
                               organizationDisplayName
                             )}
                           </p>
-                          {(generalAccessScope === 'company' || generalAccessScope === 'anyone_link') &&
-                            generalLinkExpirationIso && (
-                              <div className="relative mt-1.5 flex flex-wrap items-center gap-2 text-[13px] text-[#5f6368]">
-                                <span>Expires</span>
-                                <button
-                                  type="button"
-                                  title={generalLinkExpirationIso}
-                                  onClick={() =>
-                                    setCalendarGeneralLinkOpen((o) => !o)
-                                  }
-                                  className="font-semibold text-[#7A005D] hover:underline"
-                                >
-                                  {formatExpirationDisplay(generalLinkExpirationIso)}
-                                </button>
-                                <div className="relative group/general-exp-remove">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setGeneralLinkExpirationIso(null);
-                                      setCalendarGeneralLinkOpen(false);
-                                    }}
-                                    className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-[#7A005D]"
-                                    aria-label="Remove expiration"
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </button>
-                                  <div className="invisible absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/general-exp-remove:visible group-hover/general-exp-remove:opacity-100">
-                                    Remove
-                                  </div>
-                                </div>
-                                {calendarGeneralLinkOpen && (
-                                  <div
-                                    ref={generalExpirationCalendarPopoverRef}
-                                    className="absolute left-0 top-full z-[80] mt-2"
-                                  >
-                                    <ExpirationCalendarPopover
-                                      valueIso={generalLinkExpirationIso}
-                                      onSelect={(iso) => {
-                                        setGeneralLinkExpirationIso(iso);
-                                        setCalendarGeneralLinkOpen(false);
-                                      }}
-                                      onClose={() => setCalendarGeneralLinkOpen(false)}
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            )}
                         </div>
                       </div>
                     </button>
@@ -1836,6 +1775,55 @@ export default function App() {
                           </motion.div>
                         )}
                       </AnimatePresence>
+
+                      {generalLinkExpirationIso && (
+                        <div className="relative mt-2 flex flex-wrap items-center gap-2 text-[13px] text-[#5f6368]">
+                          <span>Expires</span>
+                          <button
+                            type="button"
+                            title={generalLinkExpirationIso}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCalendarGeneralLinkOpen((o) => !o);
+                            }}
+                            className="font-semibold text-[#7A005D] hover:underline"
+                          >
+                            {formatExpirationDisplay(generalLinkExpirationIso)}
+                          </button>
+                          <div className="relative group/general-exp-remove">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setGeneralLinkExpirationIso(null);
+                                setCalendarGeneralLinkOpen(false);
+                              }}
+                              className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-[#DC2626]"
+                              aria-label="Remove expiration"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                            <div className="invisible absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/general-exp-remove:visible group-hover/general-exp-remove:opacity-100">
+                              Remove
+                            </div>
+                          </div>
+                          {calendarGeneralLinkOpen && (
+                            <div
+                              ref={generalExpirationCalendarPopoverRef}
+                              className="absolute left-0 top-full z-[80] mt-2"
+                            >
+                              <ExpirationCalendarPopover
+                                valueIso={generalLinkExpirationIso}
+                                onSelect={(iso) => {
+                                  setGeneralLinkExpirationIso(iso);
+                                  setCalendarGeneralLinkOpen(false);
+                                }}
+                                onClose={() => setCalendarGeneralLinkOpen(false)}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
