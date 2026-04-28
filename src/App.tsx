@@ -245,6 +245,7 @@ type BulkImportRow = {
   query: string;
   dropdownOpen: boolean;
 };
+type SnackbarTone = 'success' | 'warning' | 'info' | 'error';
 
 function generalAccessSubtitle(
   scope: GeneralAccessScope,
@@ -331,18 +332,32 @@ export default function App() {
   const [selectedChips, setSelectedChips] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null);
+  const [snackbarTone, setSnackbarTone] = useState<SnackbarTone>('info');
+  const [snackbarStartedAt, setSnackbarStartedAt] = useState<number>(0);
+  const [snackbarTick, setSnackbarTick] = useState(0);
   const [previewDrawer, setPreviewDrawer] = useState<{ mode: 'all' | 'row'; personId?: string } | null>(null);
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [pendingTransferPersonId, setPendingTransferPersonId] = useState<string | null>(null);
   const snackbarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const inferToastTone = (message: string): SnackbarTone => {
+    const normalized = message.toLowerCase();
+    if (/(could not|failed|error|invalid|unable)/.test(normalized)) return 'error';
+    if (/(already|duplicate|no |cannot|warning|not found)/.test(normalized)) return 'warning';
+    if (/(copied|saved|complete|added|selected|updated|sent|matched)/.test(normalized)) return 'success';
+    return 'info';
+  };
+
   const showToast = (message: string) => {
     if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
+    setSnackbarTone(inferToastTone(message));
+    setSnackbarStartedAt(Date.now());
+    setSnackbarTick(0);
     setSnackbarMessage(message);
     snackbarTimerRef.current = setTimeout(() => {
       setSnackbarMessage(null);
       snackbarTimerRef.current = null;
-    }, 3000);
+    }, 5000);
   };
   const [activeAccessDropdown, setActiveAccessDropdown] = useState<string | null>(null);
   const [transferTarget, setTransferTarget] = useState('');
@@ -673,39 +688,23 @@ export default function App() {
   ]);
 
   const handleAddPeople = () => {
-    if (selectedChips.length === 0 && inputValue.trim() === '') return;
-    
-    // For advanced2 mode with search input
-    if (viewMode === 'advanced2' && inputValue.trim() !== '') {
-      // Find person from searchablePeople
-      const foundPerson = searchablePeople.find(p => 
-        p.names[0].toLowerCase().includes(inputValue.toLowerCase())
-      );
-      
-      if (foundPerson) {
-        // Add as individual person
-        const newPerson: Person = {
-          ...foundPerson,
-          id: Math.random().toString(36).substr(2, 9),
-        };
-        setPeople([...people, newPerson]);
-        setInputValue('');
-        setIsInputFocused(false);
-        return;
-      }
-    }
-    
-    // Original behavior for group mode
-    if (selectedChips.length > 0) {
-      const newEntry: Person = {
-        id: Math.random().toString(36).substr(2, 9),
-        names: [...selectedChips],
-        role: 'View as viewer',
-        isGroup: true
-      };
-      setPeople([...people, newEntry]);
-      setSelectedChips([]);
-    }
+    const parsedInput = inputValue
+      .split(/[\n,]+/)
+      .map((token) => token.trim())
+      .filter(Boolean);
+    const merged = Array.from(new Set([...selectedChips, ...parsedInput]));
+    if (merged.length === 0) return;
+
+    const newEntry: Person = {
+      id: Math.random().toString(36).substr(2, 9),
+      names: merged,
+      role: 'View as viewer',
+      isGroup: merged.length > 1,
+    };
+    setPeople((prev) => [...prev, newEntry]);
+    setSelectedChips([]);
+    setInputValue('');
+    setIsInputFocused(false);
   };
 
   const removePerson = (id: string) => {
@@ -789,6 +788,14 @@ export default function App() {
       if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!snackbarMessage) return;
+    const interval = window.setInterval(() => {
+      setSnackbarTick(Date.now());
+    }, 100);
+    return () => window.clearInterval(interval);
+  }, [snackbarMessage]);
 
   useEffect(() => {
     const valid = new Set(people.map((p) => p.id));
@@ -963,6 +970,11 @@ export default function App() {
     }));
   })();
 
+  const snackbarElapsedMs = snackbarMessage
+    ? Math.min(5000, Math.max(0, (snackbarTick || Date.now()) - snackbarStartedAt))
+    : 0;
+  const snackbarProgressDeg = (snackbarElapsedMs / 5000) * 360;
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 font-sans relative overflow-auto">
       {/* Snackbar */}
@@ -972,13 +984,46 @@ export default function App() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] min-w-[300px] max-w-[720px] min-h-[88px] bg-[#C9D7EF] rounded-3xl shadow-[0_16px_40px_rgba(0,0,0,0.35)] flex items-center px-6 py-4 justify-between gap-4 border border-[#B5C4DF]"
+            className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] w-[360px] h-[56px] rounded-2xl shadow-[0_14px_28px_rgba(0,0,0,0.35)] flex items-center px-4 py-2 justify-between gap-3 border ${
+              snackbarTone === 'success'
+                ? 'bg-[#BDEAE3] border-[#9DD7CB]'
+                : snackbarTone === 'warning'
+                  ? 'bg-[#FCE9B0] border-[#E9CC73]'
+                  : snackbarTone === 'error'
+                    ? 'bg-[#F8C7C3] border-[#E59E97]'
+                    : 'bg-[#C9D7EF] border-[#B5C4DF]'
+            }`}
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="bg-[#4A67A1] rounded-full p-2 shrink-0">
-                <Info className="w-6 h-6 text-white" />
+              <div
+                className={`rounded-full p-1.5 shrink-0 ${
+                  snackbarTone === 'success'
+                    ? 'bg-[#0D7B62]'
+                    : snackbarTone === 'warning'
+                      ? 'bg-[#E2A100]'
+                      : snackbarTone === 'error'
+                        ? 'bg-[#C74431]'
+                        : 'bg-[#4A67A1]'
+                }`}
+              >
+                {snackbarTone === 'success' && <Check className="w-4 h-4 text-white" />}
+                {snackbarTone === 'warning' && <AlertCircle className="w-4 h-4 text-white" />}
+                {snackbarTone === 'error' && <AlertCircle className="w-4 h-4 text-white" />}
+                {snackbarTone === 'info' && <Info className="w-4 h-4 text-white" />}
               </div>
-              <span className="text-[#1B2A44] font-semibold text-[20px] leading-snug break-words">{snackbarMessage}</span>
+              <span
+                className={`font-semibold text-sm leading-snug truncate ${
+                  snackbarTone === 'success'
+                    ? 'text-[#0A4538]'
+                    : snackbarTone === 'warning'
+                      ? 'text-[#5B4200]'
+                      : snackbarTone === 'error'
+                        ? 'text-[#4D1612]'
+                        : 'text-[#1B2A44]'
+                }`}
+              >
+                {snackbarMessage}
+              </span>
             </div>
             <button 
               type="button"
@@ -986,11 +1031,35 @@ export default function App() {
                 if (snackbarTimerRef.current) clearTimeout(snackbarTimerRef.current);
                 setSnackbarMessage(null);
               }}
-              className="relative flex items-center justify-center shrink-0"
+              className="relative flex items-center justify-center shrink-0 w-7 h-7"
             >
-              <div className="absolute inset-0 border-2 border-[#4A67A1] rounded-full opacity-70"></div>
-              <div className="bg-[#4A67A1] rounded-full p-1.5">
-                <X className="w-4 h-4 text-white" />
+              <div
+                className="absolute inset-0 rounded-full"
+                style={{
+                  background: `conic-gradient(${
+                    snackbarTone === 'success'
+                      ? '#0D7B62'
+                      : snackbarTone === 'warning'
+                        ? '#E2A100'
+                        : snackbarTone === 'error'
+                          ? '#C74431'
+                          : '#4A67A1'
+                  } ${snackbarProgressDeg}deg, rgba(255,255,255,0.45) 0deg)`,
+                }}
+              />
+              <div className="absolute inset-[2px] bg-white/80 rounded-full" />
+              <div
+                className={`relative rounded-full p-1 ${
+                  snackbarTone === 'success'
+                    ? 'bg-[#0D7B62]'
+                    : snackbarTone === 'warning'
+                      ? 'bg-[#E2A100]'
+                      : snackbarTone === 'error'
+                        ? 'bg-[#C74431]'
+                        : 'bg-[#4A67A1]'
+                }`}
+              >
+                <X className="w-3.5 h-3.5 text-white" />
               </div>
             </button>
           </motion.div>
@@ -1411,13 +1480,8 @@ export default function App() {
                             <button 
                               key={person.id}
                               onClick={() => {
-                                const newPerson: Person = {
-                                  ...person,
-                                  id: Math.random().toString(36).substr(2, 9),
-                                };
-                                setPeople([...people, newPerson]);
+                                addChip(person.names[0]);
                                 setInputValue('');
-                                setIsInputFocused(false);
                               }}
                               className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 border-b border-gray-100 last:border-0"
                             >
@@ -1516,11 +1580,11 @@ export default function App() {
             <button 
               onClick={handleAddPeople}
               className={`px-6 py-2.5 font-medium rounded-lg transition-colors ${
-                (selectedChips.length > 0 || (viewMode === 'advanced2' && inputValue.trim() !== ''))
+                (selectedChips.length > 0 || inputValue.trim() !== '')
                 ? 'bg-[#7A005D] text-white hover:bg-[#60003D]' 
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
-              disabled={selectedChips.length === 0 && (viewMode !== 'advanced2' || inputValue.trim() === '')}
+              disabled={selectedChips.length === 0 && inputValue.trim() === ''}
             >
               Add
             </button>
@@ -2474,6 +2538,23 @@ export default function App() {
             <div className="border-t border-gray-200 px-8 py-4 flex justify-end">
               <button
                 type="button"
+                onClick={() => {
+                  const namesToAdd = bulkImportRows
+                    .map((row) => {
+                      const matched = bulkDirectory.find((p) => p.id === row.matchedPersonId);
+                      if (matched) return matched.fullName;
+                      const typed = row.original.trim() || row.query.trim();
+                      return typed || null;
+                    })
+                    .filter((v): v is string => Boolean(v));
+                  if (namesToAdd.length > 0) {
+                    setSelectedChips((prev) => Array.from(new Set([...prev, ...namesToAdd])));
+                    showToast(`${namesToAdd.length} people/groups selected`);
+                  }
+                  setBulkImportRows([]);
+                  setBulkInputValue('');
+                  setIsBulkAddOpen(false);
+                }}
                 className="px-6 py-2.5 rounded-lg bg-[#7A005D] text-white font-semibold hover:bg-[#60003D] transition-colors"
               >
                 Add
