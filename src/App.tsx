@@ -36,7 +36,8 @@ import {
   ListChecks,
   Link2,
   Image,
-  CirclePlus
+  CirclePlus,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -470,7 +471,7 @@ export default function App() {
         {!isSingle && names.length > 1 && (
           <>
             <div className="pointer-events-none absolute inset-0 z-10 cursor-help" aria-hidden />
-            <div className="absolute left-0 bottom-full mb-2 p-4 bg-[#EDEBE7] text-[#1f2937] rounded-2xl opacity-0 invisible group-hover/tags-cell:opacity-100 group-hover/tags-cell:visible transition-all z-[220] w-80 shadow-2xl border border-gray-300 pointer-events-none">
+            <div className="absolute left-0 bottom-full mb-2 p-4 bg-[#F3F4F6] text-[#1f2937] rounded-2xl opacity-0 invisible group-hover/tags-cell:opacity-100 group-hover/tags-cell:visible transition-all z-[220] w-80 shadow-2xl border border-gray-300 pointer-events-none">
               <div className="font-bold text-sm mb-2">All people/groups:</div>
               <div className="h-[1px] bg-gray-300 mb-3" />
               <div className="flex flex-wrap gap-2">
@@ -748,7 +749,7 @@ export default function App() {
 
     const wrapper = document.createElement('span');
     wrapper.className =
-      'inline-flex items-center overflow-hidden rounded-md border border-gray-400 align-middle bg-white mx-1';
+      'inline-flex items-center overflow-hidden rounded-md border border-gray-400 align-middle bg-[#FAFAFA] mx-1';
     wrapper.setAttribute('contenteditable', 'false');
     wrapper.setAttribute('draggable', 'true');
     wrapper.dataset.chip = option;
@@ -758,7 +759,7 @@ export default function App() {
     left.textContent = '[x]';
 
     const middle = document.createElement('span');
-    middle.className = 'border-l border-r border-gray-300 px-2 py-0.5 text-[12px] text-gray-900';
+    middle.className = 'px-2 py-0.5 text-[12px] text-gray-900';
     middle.textContent = labelMap[option];
 
     const remove = document.createElement('button');
@@ -910,8 +911,16 @@ export default function App() {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-[744px] border border-gray-200 z-10 relative">
         {isEmailComposerOpen ? (
           <>
-            <div className="px-6 pt-6 pb-4 flex items-center border-b border-gray-100">
-              <h1 className="text-2xl font-semibold text-gray-900 flex-1 text-center">Email recipients</h1>
+            <div className="px-6 pt-6 pb-4 flex items-center gap-3 border-b border-gray-100">
+              <button
+                type="button"
+                onClick={() => setIsEmailComposerOpen(false)}
+                className="flex items-center gap-1 text-sm font-medium text-[#7A005D] hover:bg-gray-100 rounded-lg px-2 py-1 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4 shrink-0" />
+                Back
+              </button>
+              <h1 className="text-2xl font-semibold text-gray-900 flex-1 text-center pr-10">Email recipients</h1>
               <button
                 type="button"
                 onClick={() => setIsEmailComposerOpen(false)}
@@ -984,7 +993,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setEmailComposerTab('edit')}
-                    className={`h-full rounded-md px-2 text-sm font-normal transition-colors ${
+                    className={`h-full rounded-md px-4 text-sm font-normal transition-colors ${
                       emailComposerTab === 'edit'
                         ? 'bg-[#8b0069] text-white'
                         : 'text-gray-800 hover:bg-gray-50'
@@ -995,7 +1004,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setEmailComposerTab('preview')}
-                    className={`h-full rounded-md px-2 text-sm font-normal transition-colors ${
+                    className={`h-full rounded-md px-4 text-sm font-normal transition-colors ${
                       emailComposerTab === 'preview'
                         ? 'bg-[#8b0069] text-white'
                         : 'text-gray-800 hover:bg-gray-50'
@@ -1023,7 +1032,7 @@ export default function App() {
                   <label className="text-[14px] font-semibold text-gray-900">
                     Body<span className="text-red-500">*</span>
                   </label>
-                  <div className="rounded-lg border border-gray-300 overflow-hidden">
+                  <div className="rounded-lg border border-gray-300">
                   <div className="border-b border-gray-300 px-4 py-2.5 text-base text-gray-700">
                     <div className="flex flex-wrap items-center gap-2">
                     <button type="button" className="hover:text-gray-900"><Undo2 className="w-5 h-5" /></button>
@@ -1051,13 +1060,14 @@ export default function App() {
                     <button type="button" className="hover:text-gray-900"><Link2 className="w-5 h-5" /></button>
                     <button type="button" className="hover:text-gray-900"><Image className="w-5 h-5" /></button>
                     <button type="button" className="hover:text-gray-900"><CirclePlus className="w-5 h-5" /></button>
-                    <div className="relative ml-auto" ref={variableMenuRef}>
+                    <div className="relative" ref={variableMenuRef}>
                       <button
                         type="button"
                         onClick={() => setIsVariableMenuOpen((o) => !o)}
-                        className="text-sm px-4 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-700"
+                        className="inline-flex items-center gap-1 text-sm px-4 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-700"
                       >
-                        ⚡ Insert variable
+                        <Zap className="w-4 h-4" />
+                        Insert variable
                       </button>
                       <AnimatePresence>
                         {isVariableMenuOpen && (
@@ -1065,7 +1075,7 @@ export default function App() {
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 6 }}
-                            className="absolute right-0 top-full z-50 mt-2 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-xl"
+                            className="absolute right-0 top-full z-[300] mt-2 w-48 max-h-[200px] overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-xl"
                           >
                             {(['Recipient', 'Username', 'Filename', 'File type', 'Access type'] as const).map((option) => (
                               <button
@@ -1150,13 +1160,6 @@ export default function App() {
             <div className="sticky bottom-0 z-10 flex justify-end gap-3 border-t border-gray-100 bg-white px-6 py-4">
               <button
                 type="button"
-                onClick={() => setIsEmailComposerOpen(false)}
-                className="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-800 font-medium hover:bg-gray-50"
-              >
-                Back
-              </button>
-              <button
-                type="button"
                 disabled={emailRecipientIds.size === 0 || !emailBodyHasWord}
                 onClick={sendComposedEmail}
                 className={`px-6 py-2.5 rounded-xl font-semibold transition-colors ${
@@ -1232,7 +1235,7 @@ export default function App() {
                   >
                     <FileUp className="w-5 h-5" />
                   </button>
-                  <div className="invisible absolute bottom-full right-0 z-50 mb-2 w-72 rounded-xl border border-gray-300 bg-[#EDEBE7] px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/bulk-tooltip:visible group-hover/bulk-tooltip:opacity-100">
+                  <div className="invisible absolute bottom-full right-0 z-50 mb-2 w-72 rounded-xl border border-gray-300 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/bulk-tooltip:visible group-hover/bulk-tooltip:opacity-100">
                     Bulk add a list of employees using names, IDs, or email addresses
                   </div>
                 </div>
@@ -1392,7 +1395,7 @@ export default function App() {
                 >
                   <Copy className="w-5 h-5" />
                 </button>
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-100 text-gray-900 text-xs font-medium rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all w-fit whitespace-nowrap shadow-lg border border-gray-200 z-50">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#F3F4F6] text-gray-900 text-xs font-medium rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all w-fit whitespace-nowrap shadow-lg border border-gray-200 z-50">
                   Copy emails for all with access
                 </div>
               </div>
@@ -1405,7 +1408,7 @@ export default function App() {
                 >
                   <Mail className="w-5 h-5" />
                 </button>
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-100 text-gray-900 text-xs font-medium rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all w-fit whitespace-nowrap shadow-lg border border-gray-200 z-50">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#F3F4F6] text-gray-900 text-xs font-medium rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all w-fit whitespace-nowrap shadow-lg border border-gray-200 z-50">
                   Email all with access
                 </div>
               </div>
@@ -1418,7 +1421,7 @@ export default function App() {
                 >
                   <Eye className="w-5 h-5" />
                 </button>
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-100 text-gray-900 text-xs font-medium rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all w-fit whitespace-nowrap shadow-lg border border-gray-200 z-50">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#F3F4F6] text-gray-900 text-xs font-medium rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all w-fit whitespace-nowrap shadow-lg border border-gray-200 z-50">
                   Preview all with access
                 </div>
               </div>
@@ -1427,12 +1430,12 @@ export default function App() {
 
           <div className="border border-gray-200 rounded-xl overflow-visible">
             {/* Table Header */}
-            <div className={`grid ${gridCols} gap-x-10 pl-6 pr-2 py-3 bg-gray-50/50 border-b border-gray-200 text-sm font-medium text-gray-500`}>
+            <div className={`grid ${gridCols} gap-x-10 px-3 py-3 bg-gray-50/50 border-b border-gray-200 text-sm font-medium text-gray-500`}>
               <div className="flex min-w-0 items-center gap-4">
                 <span className="shrink-0">People</span>
               </div>
               {viewMode === 'advanced' && (
-                <div className="flex items-center justify-center gap-1">
+                <div className="flex items-center justify-start gap-1 text-left">
                   View as owner <HelpCircle className="w-3.5 h-3.5" />
                 </div>
               )}
@@ -1443,7 +1446,7 @@ export default function App() {
 
             {/* Table Row */}
             {people.map(person => (
-              <div key={person.id} className={`grid ${gridCols} gap-x-10 pl-6 pr-2 py-4 items-center hover:bg-gray-50 transition-colors group/row relative`}>
+              <div key={person.id} className={`grid ${gridCols} gap-x-10 px-3 py-4 items-center hover:bg-gray-50 transition-colors group/row relative`}>
                 <div className="flex min-w-0 w-full items-center">
                   <div className="min-w-0 flex-1">
                     <TagsCell names={person.names} />
@@ -1460,7 +1463,7 @@ export default function App() {
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <div className="invisible absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/row-edit:visible group-hover/row-edit:opacity-100">
+                      <div className="invisible absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/row-edit:visible group-hover/row-edit:opacity-100">
                         Edit
                       </div>
                     </div>
@@ -1473,7 +1476,7 @@ export default function App() {
                       >
                         <Eye className="h-4 w-4" />
                       </button>
-                      <div className="invisible absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/row-preview:visible group-hover/row-preview:opacity-100">
+                      <div className="invisible absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/row-preview:visible group-hover/row-preview:opacity-100">
                         Preview
                       </div>
                     </div>
@@ -1521,7 +1524,7 @@ export default function App() {
                 )}
 
                 <div className="relative flex w-full min-w-0 items-start justify-start gap-4">
-                  <div className="flex min-w-0 flex-1 flex-col items-start gap-4">
+                  <div className="flex min-w-0 flex-1 flex-col items-start gap-0">
                     <div
                       className="relative flex w-full justify-start"
                       ref={person.id === activeAccessDropdown ? accessDropdownRef : null}
@@ -1532,10 +1535,10 @@ export default function App() {
                           setActiveAccessDropdown(activeAccessDropdown === person.id ? null : person.id)
                         }
                         title={person.role}
-                        className={`flex max-w-[200px] cursor-pointer items-center gap-0.5 rounded border px-2 py-1 text-sm text-gray-700 transition-colors hover:bg-gray-100 min-w-0 justify-start text-left ${
+                        className={`flex max-w-[200px] cursor-pointer items-center gap-0.5 rounded border px-2 py-1 text-sm text-gray-700 transition-colors min-w-0 justify-start text-left ${
                           activeAccessDropdown === person.id
                             ? 'border-[#1a73e8] bg-blue-50/30 ring-1 ring-[#1a73e8]/20'
-                            : 'border-transparent hover:border-gray-200'
+                            : 'border-transparent'
                         }`}
                       >
                         <span className="min-w-0 flex-1 truncate text-left">{person.role}</span>
@@ -1551,7 +1554,7 @@ export default function App() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
-                            className="absolute left-0 top-full z-[60] mt-2 w-72 max-h-[320px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-2 shadow-2xl"
+                            className="absolute left-0 top-full z-[250] mt-2 w-72 max-h-[200px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-2 shadow-2xl"
                           >
                               <button 
                                 type="button"
@@ -1620,6 +1623,7 @@ export default function App() {
                                   Transfer ownership
                                 </button>
                               )}
+                              {person.role !== 'Owner' && (
                               <button 
                                 type="button"
                                 onClick={() => {
@@ -1634,6 +1638,7 @@ export default function App() {
                               >
                                 {person.expirationDate ? 'Remove expiration' : 'Add expiration'}
                               </button>
+                              )}
                               {person.role !== 'Owner' && (
                                 <>
                                   <div className="border-t border-gray-100 my-2"></div>
@@ -1655,20 +1660,22 @@ export default function App() {
                     </div>
 
                     {person.expirationDate && (
-                      <div className="relative flex max-w-full flex-wrap items-center justify-start gap-2 text-xs text-gray-500">
-                        <span className="text-gray-500">Expires</span>
-                        <button
-                          type="button"
-                          title={person.expirationDate}
-                          onClick={() =>
-                            setCalendarOpenPersonId((cur) =>
-                              cur === person.id ? null : person.id
-                            )
-                          }
-                          className="font-semibold text-[#7A005D] hover:underline"
-                        >
-                          {formatExpirationDisplay(person.expirationDate)}
-                        </button>
+                      <div className="relative mt-[2px] flex w-full items-center justify-between text-xs text-gray-500">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-500">Expires</span>
+                          <button
+                            type="button"
+                            title={person.expirationDate}
+                            onClick={() =>
+                              setCalendarOpenPersonId((cur) =>
+                                cur === person.id ? null : person.id
+                              )
+                            }
+                            className="font-semibold text-[#7A005D] hover:underline"
+                          >
+                            {formatExpirationDisplay(person.expirationDate)}
+                          </button>
+                        </div>
                         <div className="relative group/remove-expiry">
                           <button
                             type="button"
@@ -1681,7 +1688,7 @@ export default function App() {
                           >
                             <X className="h-4 w-4" />
                           </button>
-                          <div className="invisible absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/remove-expiry:visible group-hover/remove-expiry:opacity-100">
+                          <div className="invisible absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/remove-expiry:visible group-hover/remove-expiry:opacity-100">
                             Remove
                           </div>
                         </div>
@@ -1709,7 +1716,7 @@ export default function App() {
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
-                        <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-100 text-gray-900 text-xs font-medium rounded-xl opacity-0 invisible group-hover/delete-tooltip:opacity-100 group-hover/delete-tooltip:visible transition-all w-fit whitespace-nowrap shadow-lg border border-gray-200 z-50">
+                        <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-[#F3F4F6] text-gray-900 text-xs font-medium rounded-xl opacity-0 invisible group-hover/delete-tooltip:opacity-100 group-hover/delete-tooltip:visible transition-all w-fit whitespace-nowrap shadow-lg border border-gray-200 z-50">
                           Remove access
                         </div>
                       </div>
@@ -1776,6 +1783,54 @@ export default function App() {
                               organizationDisplayName
                             )}
                           </p>
+                          {generalLinkExpirationIso && (
+                            <div className="relative mt-[2px] flex items-center gap-2 whitespace-nowrap text-[13px] text-[#5f6368]">
+                              <span>Expires</span>
+                              <button
+                                type="button"
+                                title={generalLinkExpirationIso}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCalendarGeneralLinkOpen((o) => !o);
+                                }}
+                                className="font-semibold text-[#7A005D] hover:underline"
+                              >
+                                {formatExpirationDisplay(generalLinkExpirationIso)}
+                              </button>
+                              <div className="relative group/general-exp-remove">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setGeneralLinkExpirationIso(null);
+                                    setCalendarGeneralLinkOpen(false);
+                                  }}
+                                  className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-[#DC2626]"
+                                  aria-label="Remove expiration"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                                <div className="invisible absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/general-exp-remove:visible group-hover/general-exp-remove:opacity-100">
+                                  Remove
+                                </div>
+                              </div>
+                              {calendarGeneralLinkOpen && (
+                                <div
+                                  ref={generalExpirationCalendarPopoverRef}
+                                  className="absolute left-0 top-full z-[260] mt-2"
+                                >
+                                  <ExpirationCalendarPopover
+                                    valueIso={generalLinkExpirationIso}
+                                    onSelect={(iso) => {
+                                      setGeneralLinkExpirationIso(iso);
+                                      setCalendarGeneralLinkOpen(false);
+                                    }}
+                                    onClose={() => setCalendarGeneralLinkOpen(false)}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </button>
@@ -1786,7 +1841,7 @@ export default function App() {
                           initial={{ opacity: 0, y: 4 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 4 }}
-                          className="absolute left-0 top-full mt-1.5 z-[70] w-[240px] bg-white rounded-xl border border-gray-200 shadow-2xl py-1 overflow-hidden"
+                          className="absolute left-0 top-full mt-1.5 z-[250] w-[240px] max-h-[200px] overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-2xl py-1"
                         >
                           {(
                             [
@@ -1827,7 +1882,7 @@ export default function App() {
                           setGeneralRoleDropdownOpen((o) => !o);
                           setGeneralScopeDropdownOpen(false);
                         }}
-                        className="inline-flex min-h-[40px] max-w-[min(220px,100%)] cursor-pointer items-center gap-0.5 rounded-lg bg-transparent py-2 pl-3 pr-2 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50"
+                        className="inline-flex min-h-[40px] max-w-[min(220px,100%)] cursor-pointer items-center gap-0.5 rounded-lg bg-transparent py-2 pl-3 pr-2 text-left text-sm font-medium text-gray-800 transition-colors"
                       >
                         <span className="min-w-0 flex-1 truncate">
                           {generalLinkAccessRole === 'View as viewer' ? 'Viewer' : generalLinkAccessRole}
@@ -1841,7 +1896,7 @@ export default function App() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
-                            className="absolute right-0 top-full z-[70] mt-2 w-72 max-h-[320px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-2 shadow-2xl"
+                            className="absolute right-0 top-full z-[250] mt-2 w-72 max-h-[200px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-2 shadow-2xl"
                           >
                               <button
                                 type="button"
@@ -1964,54 +2019,6 @@ export default function App() {
                         )}
                       </AnimatePresence>
 
-                      {generalLinkExpirationIso && (
-                        <div className="relative mt-1 flex items-center gap-2 whitespace-nowrap text-[13px] text-[#5f6368]">
-                          <span>Expires</span>
-                          <button
-                            type="button"
-                            title={generalLinkExpirationIso}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCalendarGeneralLinkOpen((o) => !o);
-                            }}
-                            className="font-semibold text-[#7A005D] hover:underline"
-                          >
-                            {formatExpirationDisplay(generalLinkExpirationIso)}
-                          </button>
-                          <div className="relative group/general-exp-remove">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setGeneralLinkExpirationIso(null);
-                                setCalendarGeneralLinkOpen(false);
-                              }}
-                              className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-[#DC2626]"
-                              aria-label="Remove expiration"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                            <div className="invisible absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-gray-100 px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/general-exp-remove:visible group-hover/general-exp-remove:opacity-100">
-                              Remove
-                            </div>
-                          </div>
-                          {calendarGeneralLinkOpen && (
-                            <div
-                              ref={generalExpirationCalendarPopoverRef}
-                              className="absolute left-0 top-full z-[80] mt-2"
-                            >
-                              <ExpirationCalendarPopover
-                                valueIso={generalLinkExpirationIso}
-                                onSelect={(iso) => {
-                                  setGeneralLinkExpirationIso(iso);
-                                  setCalendarGeneralLinkOpen(false);
-                                }}
-                                onClose={() => setCalendarGeneralLinkOpen(false)}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
