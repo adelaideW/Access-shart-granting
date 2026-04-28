@@ -500,14 +500,7 @@ export default function App() {
       const alreadyAssigned = prev.some(
         (entry) => entry.id !== rowId && entry.matchedPersonId === personOption.id
       );
-      if (alreadyAssigned) {
-        duplicate = true;
-        return prev.map((entry) =>
-          entry.id === rowId
-            ? { ...entry, dropdownOpen: true }
-            : entry
-        );
-      }
+      duplicate = alreadyAssigned;
       return prev.map((entry) =>
         entry.id === rowId
           ? {
@@ -520,7 +513,7 @@ export default function App() {
       );
     });
     if (duplicate) {
-      showToast(`${personOption.fullName} is already matched in another row`);
+      showToast(`${personOption.fullName} is already matched with another address`);
     }
   };
 
@@ -916,11 +909,11 @@ export default function App() {
     wrapper.dataset.chip = option;
 
     const left = document.createElement('span');
-    left.className = 'px-1.5 py-0.5 text-[16px] text-gray-700';
+    left.className = 'px-1.5 py-0.5 text-[14px] text-gray-700';
     left.textContent = '[x]';
 
     const middle = document.createElement('span');
-    middle.className = 'ml-1 px-2 py-0.5 text-[16px] text-gray-900';
+    middle.className = 'ml-[2px] px-2 py-0.5 text-[14px] text-gray-900';
     middle.textContent = labelMap[option];
 
     const remove = document.createElement('button');
@@ -1028,6 +1021,14 @@ export default function App() {
     ? Math.min(5000, Math.max(0, (snackbarTick || Date.now()) - snackbarStartedAt))
     : 0;
   const snackbarProgressDeg = (snackbarElapsedMs / 5000) * 360;
+  const bulkHasEmptyIdentifier = bulkImportRows.some((row) => row.original.trim() === '');
+  const bulkHasMatchConflict = bulkImportRows.some(
+    (row, _, arr) =>
+      !!row.matchedPersonId &&
+      arr.filter((entry) => entry.matchedPersonId === row.matchedPersonId).length > 1
+  );
+  const canCommitBulkAdd =
+    bulkImportRows.length > 0 && !bulkHasEmptyIdentifier && !bulkHasMatchConflict;
 
   useEffect(() => {
     if (!isEmailComposerOpen || emailComposerTab !== 'edit') return;
@@ -1340,7 +1341,7 @@ export default function App() {
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 6 }}
-                            className="absolute right-0 top-full z-[300] mt-2 w-48 max-h-[200px] overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-xl"
+                            className="absolute right-0 top-full z-[300] mt-2 w-48 max-h-[240px] overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-xl"
                           >
                             {(['Recipient', 'Username', 'Filename', 'File type', 'Access type'] as const).map((option) => (
                               <button
@@ -1542,7 +1543,7 @@ export default function App() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 5 }}
                     id="main-input-menu"
-                    className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-[400px] overflow-y-auto"
+                    className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-[240px] overflow-y-auto"
                     onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
                   >
                     {viewMode === 'advanced2' && inputValue.trim() !== '' ? (
@@ -1783,7 +1784,7 @@ export default function App() {
                       <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
                         Remove group/person from this row
                       </div>
-                      <div className="max-h-[200px] space-y-1.5 overflow-y-auto pr-1">
+                      <div className="max-h-[240px] space-y-1.5 overflow-y-auto pr-1">
                         {person.names.map((name) => (
                           <div
                             key={name}
@@ -1862,7 +1863,7 @@ export default function App() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
-                            className="absolute left-0 top-full z-[250] mt-2 w-72 overflow-visible rounded-xl border border-gray-200 bg-white py-2 shadow-2xl"
+                            className="absolute left-0 top-full z-[250] mt-2 w-72 max-h-[240px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-2 shadow-2xl"
                             onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
                           >
                               <button 
@@ -2178,7 +2179,7 @@ export default function App() {
                           initial={{ opacity: 0, y: 4 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 4 }}
-                          className="absolute left-0 top-full mt-1.5 z-[250] w-[240px] max-h-[200px] overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-2xl py-1"
+                          className="absolute left-0 top-full mt-1.5 z-[250] w-[240px] max-h-[240px] overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-2xl py-1"
                           onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
                         >
                           {(
@@ -2261,7 +2262,7 @@ export default function App() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
-                            className="absolute right-0 top-full z-[250] mt-2 w-72 overflow-visible rounded-xl border border-gray-200 bg-white py-1 shadow-2xl"
+                            className="absolute right-0 top-full z-[250] mt-2 w-72 max-h-[240px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-2xl"
                             onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
                           >
                               <button
@@ -2629,7 +2630,7 @@ export default function App() {
                                     <div className="relative group/dup-warning">
                                       <AlertCircle className="h-4 w-4 text-amber-500" />
                                       <div className="invisible absolute bottom-full right-0 z-[280] mb-2 w-64 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 opacity-0 shadow-lg transition-all group-hover/dup-warning:visible group-hover/dup-warning:opacity-100">
-                                        This person is already matched to another address. Use unique matches per row.
+                                        This person has been matched with a different address in the table.
                                       </div>
                                     </div>
                                   )}
@@ -2680,7 +2681,9 @@ export default function App() {
             <div className="border-t border-gray-200 px-8 py-4 flex justify-end">
               <button
                 type="button"
+                disabled={!canCommitBulkAdd}
                 onClick={() => {
+                  if (!canCommitBulkAdd) return;
                   const namesToAdd = bulkImportRows
                     .map((row) => {
                       const matched = bulkDirectory.find((p) => p.id === row.matchedPersonId);
@@ -2697,7 +2700,11 @@ export default function App() {
                   setBulkInputValue('');
                   setIsBulkAddOpen(false);
                 }}
-                className="px-6 py-2.5 rounded-lg bg-[#7A005D] text-white font-semibold hover:bg-[#60003D] transition-colors"
+                className={`px-6 py-2.5 rounded-lg font-semibold transition-colors ${
+                  canCommitBulkAdd
+                    ? 'bg-[#7A005D] text-white hover:bg-[#60003D]'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                }`}
               >
                 Add
               </button>
