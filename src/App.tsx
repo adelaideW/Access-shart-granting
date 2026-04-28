@@ -247,7 +247,7 @@ function generalAccessSubtitle(
       case 'View as owner':
       case 'View as viewer':
       case 'Explore as owner':
-        return `${atCompany} with the link can ${roleVerb}.`;
+      return `${atCompany} with the link can ${roleVerb}`;
       default:
         return `${atCompany} with the link can collaborate.`;
     }
@@ -259,7 +259,7 @@ function generalAccessSubtitle(
     case 'View as owner':
     case 'View as viewer':
     case 'Explore as owner':
-      return `Anyone on the internet with the link can ${roleVerb}.`;
+      return `Anyone on the internet with the link can ${roleVerb}`;
     default:
       return 'Anyone on the internet with the link can collaborate.';
   }
@@ -1479,16 +1479,16 @@ export default function App() {
             <h2 className="text-base font-semibold text-gray-900 mb-3">General access</h2>
             <div
               ref={generalScopeDropdownRef}
-              className="border border-gray-200 rounded-xl bg-white overflow-visible"
+              className="overflow-visible"
             >
-              <div className="flex items-stretch gap-3 p-3 min-w-0">
+              <div className="flex items-stretch gap-3 py-2 min-w-0">
                 <div
                   className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center ${
                     generalAccessScope === 'restricted'
                       ? 'bg-[#e8eaed]'
                       : generalAccessScope === 'company'
                         ? 'bg-indigo-100'
-                        : 'bg-[#1a7f37]'
+                        : 'bg-[#c8e6c9]'
                   }`}
                 >
                   {generalAccessScope === 'restricted' && (
@@ -1498,7 +1498,7 @@ export default function App() {
                     <Building2 className="w-[18px] h-[18px] text-indigo-700" strokeWidth={2} />
                   )}
                   {generalAccessScope === 'anyone_link' && (
-                    <Globe className="w-[18px] h-[18px] text-white" strokeWidth={2.2} />
+                    <Globe className="w-[18px] h-[18px] text-[#2e7d32]" strokeWidth={2.2} />
                   )}
                 </div>
                 <div className="flex-1 flex items-center gap-2 min-w-0">
@@ -1513,7 +1513,7 @@ export default function App() {
                     >
                       <div className="flex items-start justify-between gap-1 min-w-0">
                         <div className="min-w-0 flex-1 pr-1">
-                          <div className="text-[15px] font-medium text-gray-900 leading-tight">
+                          <div className="text-[15px] font-semibold text-gray-900 leading-tight">
                             {generalAccessScope === 'restricted' && 'Restricted'}
                             {generalAccessScope === 'company' && organizationDisplayName}
                             {generalAccessScope === 'anyone_link' && 'Anyone with the link'}
@@ -1624,9 +1624,11 @@ export default function App() {
                           setGeneralRoleDropdownOpen((o) => !o);
                           setGeneralScopeDropdownOpen(false);
                         }}
-                        className="inline-flex min-h-[40px] max-w-[min(220px,100%)] cursor-pointer items-center gap-0.5 rounded-lg border border-[#1a73e8] bg-white py-2 pl-3 pr-2 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50"
+                        className="inline-flex min-h-[40px] max-w-[min(220px,100%)] cursor-pointer items-center gap-0.5 rounded-lg bg-transparent py-2 pl-3 pr-2 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50"
                       >
-                        <span className="min-w-0 flex-1 truncate">{generalLinkAccessRole}</span>
+                        <span className="min-w-0 flex-1 truncate">
+                          {generalLinkAccessRole === 'View as viewer' ? 'Viewer' : generalLinkAccessRole}
+                        </span>
                         <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
                       </button>
 
