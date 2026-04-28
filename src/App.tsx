@@ -324,6 +324,8 @@ export default function App() {
 
   const [isEmailComposerOpen, setIsEmailComposerOpen] = useState(false);
   const [emailRecipientIds, setEmailRecipientIds] = useState<Set<string>>(new Set());
+  const [emailComposerTab, setEmailComposerTab] = useState<'edit' | 'preview'>('edit');
+  const [emailSubject, setEmailSubject] = useState('{Username} shared a {artifact type}');
   const [emailCustomMessage, setEmailCustomMessage] = useState('');
   
   const [people, setPeople] = useState<Person[]>([
@@ -681,11 +683,9 @@ export default function App() {
     }
     const all = new Set(people.map((p) => p.id));
     setEmailRecipientIds(all);
-    const ownerName = people.find((p) => p.role === 'Owner')?.names.join(', ') ?? '{Username}';
-    const selectedList = people.filter((p) => all.has(p.id));
-    setEmailCustomMessage(
-      `${ownerName} shared ${sharedFilename} with you, you can now ${emailAccessPhrase(selectedList)}`
-    );
+    setEmailComposerTab('edit');
+    setEmailSubject('{Username} shared a {artifact type}');
+    setEmailCustomMessage('{Username} shared {filename} with you, you can now {access type}');
     setIsEmailComposerOpen(true);
   };
 
@@ -823,6 +823,7 @@ export default function App() {
                     (p) => emailComposerBucket(p.role) === bucket
                   );
                   if (members.length === 0) return null;
+                  const itemCount = members.reduce((sum, p) => sum + p.names.length, 0);
                   const ids = members.map((m) => m.id);
                   const selectedInBucket = ids.filter((id) =>
                     emailRecipientIds.has(id)
@@ -835,7 +836,7 @@ export default function App() {
                       <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                         {bucket.toUpperCase().replace(/\s+/g, ' ')}{' '}
                         <span className="text-gray-400 font-normal normal-case">
-                          ({members.length})
+                          ({itemCount})
                         </span>
                       </div>
                       <label className="flex items-start gap-3 cursor-pointer rounded-lg px-2 py-2 hover:bg-gray-50 border border-transparent hover:border-gray-200">
@@ -870,15 +871,81 @@ export default function App() {
                   );
                 })}
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-800">Custom message</label>
-                <textarea
-                  value={emailCustomMessage}
-                  onChange={(e) => setEmailCustomMessage(e.target.value)}
-                  rows={4}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#7A005D]/30 focus:border-[#7A005D]"
-                  placeholder="Add an optional note…"
-                />
+              <div className="space-y-3 rounded-3xl border border-gray-300 bg-white p-4">
+                <h3 className="text-2xl font-semibold text-gray-900">Add custom message</h3>
+                <div className="grid grid-cols-2 rounded-xl border border-gray-300 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setEmailComposerTab('edit')}
+                    className={`rounded-lg py-2.5 text-base font-medium transition-colors ${
+                      emailComposerTab === 'edit'
+                        ? 'bg-[#8b0069] text-white'
+                        : 'text-gray-800 hover:bg-gray-50'
+                    }`}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEmailComposerTab('preview')}
+                    className={`rounded-lg py-2.5 text-base font-medium transition-colors ${
+                      emailComposerTab === 'preview'
+                        ? 'bg-[#8b0069] text-white'
+                        : 'text-gray-800 hover:bg-gray-50'
+                    }`}
+                  >
+                    Preview
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[14px] font-semibold text-gray-900">
+                    Subject<span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-[24px] text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#7A005D]/25 focus:border-[#7A005D]"
+                  />
+                </div>
+
+                <div className="rounded-3xl border border-gray-300 overflow-hidden">
+                  <div className="flex flex-wrap items-center gap-3 border-b border-gray-300 px-4 py-3 text-2xl text-gray-700">
+                    <button type="button" className="hover:text-gray-900">↩</button>
+                    <button type="button" className="hover:text-gray-900">↪</button>
+                    <span className="text-gray-300">|</span>
+                    <button type="button" className="font-semibold hover:text-gray-900">B</button>
+                    <button type="button" className="italic hover:text-gray-900">I</button>
+                    <button type="button" className="hover:text-gray-900">⋯</button>
+                    <span className="text-gray-300">|</span>
+                    <button type="button" className="text-base px-2 py-1 rounded border border-gray-300 bg-white">Normal text</button>
+                    <span className="text-gray-300">|</span>
+                    <button type="button" className="hover:text-gray-900">−</button>
+                    <button type="button" className="text-base px-2 py-1 rounded border border-gray-300 bg-white">15</button>
+                    <button type="button" className="hover:text-gray-900">+</button>
+                    <span className="text-gray-300">|</span>
+                    <button type="button" className="text-base px-3 py-1 rounded-xl border border-gray-300 bg-white">⚡ Insert variable</button>
+                  </div>
+
+                  <div className="min-h-[160px] p-5 text-2xl text-gray-800">
+                    {emailComposerTab === 'preview' ? (
+                      <p className="leading-relaxed">
+                        {'{Username} shared {filename} with you, you can now '}
+                        <span className="inline-flex align-middle rounded-xl border border-[#8b0069]/30 bg-[#fbe8f5] px-2 py-1">
+                          {'{access type}'}
+                        </span>
+                      </p>
+                    ) : (
+                      <div className="leading-relaxed">
+                        <span>{'{Username} shared {filename} with you, you can now '}</span>
+                        <span className="ml-2 inline-flex flex-col rounded-xl border border-[#8b0069]/30 bg-[#fbe8f5] px-2 py-1 align-middle">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-[#8b0069]">access type</span>
+                          <span className="text-base text-[#8b0069]">{'{access type}'}</span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
               <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
                 <button
@@ -920,7 +987,7 @@ export default function App() {
           <div className="flex gap-3 items-start">
             <div className="relative flex-1" ref={inputRef}>
               <div 
-                className={`w-full min-h-[44px] max-h-[480px] overflow-y-auto p-1.5 bg-white border border-gray-300 rounded-lg flex flex-wrap gap-2 transition-all ${
+                className={`w-full min-h-[44px] max-h-[480px] overflow-y-auto p-1.5 pr-12 bg-white border border-gray-300 rounded-lg flex flex-wrap gap-2 transition-all ${
                   isInputFocused ? 'ring-2 ring-[#7A005D] border-transparent' : ''
                 }`}
                 onClick={() => {
@@ -953,7 +1020,7 @@ export default function App() {
                 />
               </div>
               
-              <div className="absolute right-3 top-3 flex items-center gap-1" ref={moreMenuRef}>
+              <div className="absolute right-2 top-2 flex items-center gap-1" ref={moreMenuRef}>
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1179,7 +1246,7 @@ export default function App() {
 
           <div className="border border-gray-200 rounded-xl overflow-visible">
             {/* Table Header */}
-            <div className={`grid ${gridCols} gap-x-6 px-6 py-3 bg-gray-50/50 border-b border-gray-200 text-sm font-medium text-gray-500`}>
+            <div className={`grid ${gridCols} gap-x-10 pl-6 pr-0 py-3 bg-gray-50/50 border-b border-gray-200 text-sm font-medium text-gray-500`}>
               <div className="flex min-w-0 items-center gap-4">
                 <span className="shrink-0">People</span>
               </div>
@@ -1188,14 +1255,14 @@ export default function App() {
                   View as owner <HelpCircle className="w-3.5 h-3.5" />
                 </div>
               )}
-              <div className="flex w-full min-w-0 items-center justify-start gap-1 px-2 text-left">
+              <div className="flex w-full min-w-0 items-center justify-start gap-1 text-left">
                 Access <HelpCircle className="w-3.5 h-3.5 shrink-0" />
               </div>
             </div>
 
             {/* Table Row */}
             {people.map(person => (
-              <div key={person.id} className={`grid ${gridCols} gap-x-6 px-6 py-4 items-center hover:bg-gray-50 transition-colors group/row relative`}>
+              <div key={person.id} className={`grid ${gridCols} gap-x-10 pl-6 pr-0 py-4 items-center hover:bg-gray-50 transition-colors group/row relative`}>
                 <div className="flex min-w-0 w-full items-center">
                   <div className="min-w-0 flex-1">
                     <TagsCell names={person.names} />
@@ -1513,10 +1580,13 @@ export default function App() {
                     >
                       <div className="flex items-start justify-between gap-1 min-w-0">
                         <div className="min-w-0 flex-1 pr-1">
-                          <div className="text-[15px] font-semibold text-gray-900 leading-tight">
-                            {generalAccessScope === 'restricted' && 'Restricted'}
-                            {generalAccessScope === 'company' && organizationDisplayName}
-                            {generalAccessScope === 'anyone_link' && 'Anyone with the link'}
+                          <div className="flex items-center gap-1 text-[15px] font-semibold text-gray-900 leading-tight">
+                            <span>
+                              {generalAccessScope === 'restricted' && 'Restricted'}
+                              {generalAccessScope === 'company' && organizationDisplayName}
+                              {generalAccessScope === 'anyone_link' && 'Anyone with the link'}
+                            </span>
+                            <ChevronDown className="w-4 h-4 text-gray-500 shrink-0 mt-0.5" />
                           </div>
                           <p className="text-[13px] text-[#5f6368] leading-snug mt-0.5">
                             {generalAccessSubtitle(
@@ -1573,7 +1643,6 @@ export default function App() {
                               </div>
                             )}
                         </div>
-                        <ChevronDown className="w-4 h-4 text-gray-500 shrink-0 mt-0.5" />
                       </div>
                     </button>
 
@@ -1583,7 +1652,7 @@ export default function App() {
                           initial={{ opacity: 0, y: 4 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 4 }}
-                          className="absolute left-0 right-0 top-full mt-1.5 z-[70] bg-white rounded-xl border border-gray-200 shadow-2xl py-1 overflow-hidden"
+                          className="absolute left-0 top-full mt-1.5 z-[70] w-[400px] bg-white rounded-xl border border-gray-200 shadow-2xl py-1 overflow-hidden"
                         >
                           {(
                             [
@@ -1599,8 +1668,9 @@ export default function App() {
                                 setGeneralAccessScope(opt.key);
                                 setGeneralScopeDropdownOpen(false);
                               }}
-                              className="w-full px-4 py-2.5 flex items-start gap-3 text-left hover:bg-gray-50"
+                              className="w-full px-4 py-2.5 flex items-start justify-between gap-3 text-left hover:bg-gray-50"
                             >
+                              <span className="text-[14px] text-gray-900">{opt.listLabel}</span>
                               <span className="mt-0.5 w-5 shrink-0 flex justify-center">
                                 {generalAccessScope === opt.key ? (
                                   <Check className="w-5 h-5 text-[#1a73e8]" strokeWidth={2.5} />
@@ -1608,7 +1678,6 @@ export default function App() {
                                   <span className="w-5 h-5 block" />
                                 )}
                               </span>
-                              <span className="text-[14px] text-gray-900">{opt.listLabel}</span>
                             </button>
                           ))}
                         </motion.div>
