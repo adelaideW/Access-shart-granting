@@ -234,6 +234,16 @@ function emailComposerBucket(role: AccessLevel): EmailComposerBucket {
 type GeneralAccessScope = 'restricted' | 'company' | 'anyone_link';
 type EmailVariableOption = 'Recipient' | 'Username' | 'Filename' | 'File type' | 'Access type';
 type EmailVariableChip = { id: string; option: EmailVariableOption; label: string };
+type BulkIdentifierType = 'email' | 'employee_id' | 'name';
+type BulkDirectoryPerson = { id: string; fullName: string; email: string; employeeId: string; avatar: string };
+type BulkImportRow = {
+  id: string;
+  original: string;
+  identifierType: BulkIdentifierType;
+  matchedPersonId: string | null;
+  query: string;
+  dropdownOpen: boolean;
+};
 
 function generalAccessSubtitle(
   scope: GeneralAccessScope,
@@ -346,6 +356,8 @@ export default function App() {
   const [emailBodyHasWord, setEmailBodyHasWord] = useState(true);
   const [emailBodyHtml, setEmailBodyHtml] = useState('');
   const [isVariableMenuOpen, setIsVariableMenuOpen] = useState(false);
+  const [bulkInputValue, setBulkInputValue] = useState('');
+  const [bulkImportRows, setBulkImportRows] = useState<BulkImportRow[]>([]);
   
   const [people, setPeople] = useState<Person[]>([
     { id: '1', names: ['Harry Porter'], role: 'Owner', isGroup: false, title: 'CEO', department: 'Leadership', avatar: 'https://i.pravatar.cc/150?u=harry' }
@@ -364,6 +376,69 @@ export default function App() {
   const draggedChipRef = useRef<HTMLElement | null>(null);
 
   const [calendarOpenPersonId, setCalendarOpenPersonId] = useState<string | null>(null);
+
+  const bulkDirectory: BulkDirectoryPerson[] = [
+    { id: 'emp-1001', fullName: 'Harry Porter', email: 'harry.porter@company.com', employeeId: 'E1001', avatar: 'https://i.pravatar.cc/120?u=harry-porter' },
+    { id: 'emp-1002', fullName: 'Location Team', email: 'location@company.com', employeeId: 'E1002', avatar: 'https://i.pravatar.cc/120?u=location-team' },
+    { id: 'emp-1003', fullName: 'Department Group', email: 'department@company.com', employeeId: 'E1003', avatar: 'https://i.pravatar.cc/120?u=department-group' },
+    { id: 'emp-1004', fullName: 'Reports Group', email: 'reports@company.com', employeeId: 'E1004', avatar: 'https://i.pravatar.cc/120?u=reports-group' },
+    { id: 'emp-1005', fullName: 'Business Partner', email: 'business.partner@company.com', employeeId: 'E1005', avatar: 'https://i.pravatar.cc/120?u=business-partner' },
+    { id: 'emp-1006', fullName: 'Client Group', email: 'client.group@company.com', employeeId: 'E1006', avatar: 'https://i.pravatar.cc/120?u=client-group' },
+    { id: 'emp-1007', fullName: 'Application Recruiter', email: 'application.recruiter@company.com', employeeId: 'E1007', avatar: 'https://i.pravatar.cc/120?u=application-recruiter' },
+  ];
+
+  const detectBulkIdentifierType = (value: string): BulkIdentifierType => {
+    const trimmed = value.trim();
+    if (/\S+@\S+\.\S+/.test(trimmed)) return 'email';
+    if (/^[a-z]{0,3}\d{3,}$/i.test(trimmed) || /^\d{4,}$/.test(trimmed)) return 'employee_id';
+    return 'name';
+  };
+
+  const findMatchedPerson = (value: string, identifierType: BulkIdentifierType) => {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return null;
+    if (identifierType === 'email') {
+      return bulkDirectory.find((p) => p.email.toLowerCase() === normalized) ?? null;
+    }
+    if (identifierType === 'employee_id') {
+      return bulkDirectory.find((p) => p.employeeId.toLowerCase() === normalized) ?? null;
+    }
+    return (
+      bulkDirectory.find((p) => p.fullName.toLowerCase() === normalized) ??
+      bulkDirectory.find((p) => p.fullName.toLowerCase().includes(normalized)) ??
+      null
+    );
+  };
+
+  const bulkImportIdentifierLabel = (() => {
+    const types = new Set(bulkImportRows.map((r) => r.identifierType));
+    if (types.size === 1) {
+      if (types.has('email')) return 'Email';
+      if (types.has('employee_id')) return 'Employee ID';
+      return 'Name';
+    }
+    return 'Employee ID / Email / Name';
+  })();
+
+  const runBulkImportMatch = () => {
+    const parsed = bulkInputValue
+      .split(/[\n,]+/)
+      .map((token) => token.trim())
+      .filter(Boolean);
+    const rows = parsed.map((token, idx) => {
+      const identifierType = detectBulkIdentifierType(token);
+      const matched = findMatchedPerson(token, identifierType);
+      return {
+        id: `${Date.now()}-${idx}`,
+        original: token,
+        identifierType,
+        matchedPersonId: matched?.id ?? null,
+        query: '',
+        dropdownOpen: false,
+      } satisfies BulkImportRow;
+    });
+    setBulkImportRows(rows);
+  };
 
   // Component for tags cell with overflow detection
   const TagsCell = ({ names }: { names: string[] }) => {
@@ -759,12 +834,12 @@ export default function App() {
     left.textContent = '[x]';
 
     const middle = document.createElement('span');
-    middle.className = 'px-2 py-0.5 text-[12px] text-gray-900';
+    middle.className = 'ml-2 px-2 py-0.5 text-[12px] text-gray-900';
     middle.textContent = labelMap[option];
 
     const remove = document.createElement('button');
     remove.type = 'button';
-    remove.className = 'px-1.5 py-0.5 text-[16px] leading-none text-gray-700 hover:text-red-600';
+    remove.className = 'border-l border-gray-300 px-1.5 py-0.5 text-[16px] leading-none text-gray-700 hover:text-red-600';
     remove.textContent = '×';
     remove.dataset.removeChip = 'true';
 
@@ -989,14 +1064,14 @@ export default function App() {
                 })}
               </div>
               <div className="space-y-3">
-                <div className="inline-flex h-6 max-w-fit items-center rounded-lg border border-gray-300 p-px">
+                <div className="inline-flex h-12 w-[280px] max-w-full items-center rounded-2xl border border-gray-300 p-0.5">
                   <button
                     type="button"
                     onClick={() => setEmailComposerTab('edit')}
-                    className={`h-full rounded-md px-4 text-sm font-normal transition-colors ${
+                    className={`h-full w-1/2 rounded-l-xl px-6 text-sm font-semibold transition-colors ${
                       emailComposerTab === 'edit'
                         ? 'bg-[#8b0069] text-white'
-                        : 'text-gray-800 hover:bg-gray-50'
+                        : 'bg-white text-[#475467] hover:bg-gray-50'
                     }`}
                   >
                     Edit
@@ -1004,10 +1079,10 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setEmailComposerTab('preview')}
-                    className={`h-full rounded-md px-4 text-sm font-normal transition-colors ${
+                    className={`h-full w-1/2 rounded-r-xl px-6 text-sm font-semibold transition-colors ${
                       emailComposerTab === 'preview'
                         ? 'bg-[#8b0069] text-white'
-                        : 'text-gray-800 hover:bg-gray-50'
+                        : 'bg-white text-[#475467] hover:bg-gray-50'
                     }`}
                   >
                     Preview
@@ -1096,8 +1171,14 @@ export default function App() {
 
                   <div className="h-[160px] min-h-[160px] resize-y overflow-auto p-4 text-sm text-gray-800">
                     {emailComposerTab === 'preview' ? (
-                      <div className="leading-relaxed">
-                        <div dangerouslySetInnerHTML={{ __html: emailBodyHtml }} />
+                      <div className="rounded-2xl border border-gray-200 bg-[#F8FAFC] p-6">
+                        <div className="text-[12px] font-semibold uppercase tracking-wide text-[#6B7280]">Subject</div>
+                        <div className="mt-2 text-[40px] font-semibold text-[#111827]">{emailSubject || defaultEmailSubject()}</div>
+                        <div className="my-4 h-px bg-gray-200" />
+                        <div className="text-[12px] font-semibold uppercase tracking-wide text-[#6B7280]">Message</div>
+                        <div className="mt-3 text-[40px] leading-relaxed text-[#111827]">
+                          <div dangerouslySetInnerHTML={{ __html: emailBodyHtml || `${defaultEmailBody()}<br/>• {Document names}` }} />
+                        </div>
                       </div>
                     ) : (
                       <div
@@ -1489,7 +1570,7 @@ export default function App() {
                       <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
                         Remove group/person from this row
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="max-h-[200px] space-y-1.5 overflow-y-auto pr-1">
                         {person.names.map((name) => (
                           <div
                             key={name}
@@ -1535,7 +1616,7 @@ export default function App() {
                           setActiveAccessDropdown(activeAccessDropdown === person.id ? null : person.id)
                         }
                         title={person.role}
-                        className={`flex max-w-[200px] cursor-pointer items-center gap-0.5 rounded border px-2 py-1 text-sm text-gray-700 transition-colors min-w-0 justify-start text-left ${
+                        className={`flex max-w-[200px] cursor-pointer items-center gap-0.5 rounded border py-1 text-sm text-gray-700 transition-colors min-w-0 justify-start text-left ${
                           activeAccessDropdown === person.id
                             ? 'border-[#1a73e8] bg-blue-50/30 ring-1 ring-[#1a73e8]/20'
                             : 'border-transparent'
@@ -2000,21 +2081,6 @@ export default function App() {
                                 {generalLinkExpirationIso ? 'Remove expiration' : 'Add expiration'}
                               </button>
 
-                              <div className="my-2 border-t border-gray-100" />
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setGeneralAccessScope('restricted');
-                                  setGeneralLinkAccessRole('View as viewer');
-                                  setGeneralLinkExpirationIso(null);
-                                  setCalendarGeneralLinkOpen(false);
-                                  setGeneralRoleDropdownOpen(false);
-                                }}
-                                className="w-full px-4 py-3 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
-                              >
-                                Remove
-                              </button>
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -2096,14 +2162,166 @@ export default function App() {
                   <div className="relative border border-gray-300 rounded-xl focus-within:ring-2 focus-within:ring-[#7A005D] focus-within:border-transparent transition-all">
                     <textarea 
                       placeholder="Paste details here"
+                      value={bulkInputValue}
+                      onChange={(e) => setBulkInputValue(e.target.value)}
                       className="w-full h-48 p-4 bg-transparent outline-none resize-none text-gray-700 placeholder-gray-400"
                     />
                     <div className="absolute right-4 bottom-4">
-                      <button className="px-4 py-1.5 bg-gray-100 text-gray-400 font-medium rounded-lg cursor-not-allowed text-sm">
+                      <button
+                        type="button"
+                        onClick={runBulkImportMatch}
+                        disabled={bulkInputValue.trim().length === 0}
+                        className={`px-4 py-1.5 font-medium rounded-lg text-sm transition-colors ${
+                          bulkInputValue.trim().length === 0
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'bg-[#7A005D] text-white hover:bg-[#60003D]'
+                        }`}
+                      >
                         Import
                       </button>
                     </div>
                   </div>
+                  {bulkImportRows.length > 0 && (
+                    <div className="mt-5 overflow-hidden rounded-xl border border-gray-200">
+                      <table className="min-w-full text-left">
+                        <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          <tr>
+                            <th className="px-4 py-3">{bulkImportIdentifierLabel}</th>
+                            <th className="px-4 py-3">People</th>
+                            <th className="px-4 py-3 w-14" />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bulkImportRows.map((row) => {
+                            const matched = bulkDirectory.find((p) => p.id === row.matchedPersonId) ?? null;
+                            const filteredPeople = bulkDirectory.filter((p) =>
+                              row.query.trim() === ''
+                                ? true
+                                : `${p.fullName} ${p.email} ${p.employeeId}`
+                                    .toLowerCase()
+                                    .includes(row.query.trim().toLowerCase())
+                            );
+                            return (
+                              <tr key={row.id} className="border-t border-gray-100 text-sm text-gray-800">
+                                <td className="px-4 py-3">
+                                  <input
+                                    value={row.original}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      setBulkImportRows((prev) =>
+                                        prev.map((item) =>
+                                          item.id === row.id
+                                            ? { ...item, original: value, identifierType: detectBulkIdentifierType(value) }
+                                            : item
+                                        )
+                                      );
+                                    }}
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#7A005D]/25 focus:border-[#7A005D]"
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="relative">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setBulkImportRows((prev) =>
+                                          prev.map((item) =>
+                                            item.id === row.id
+                                              ? { ...item, dropdownOpen: !item.dropdownOpen }
+                                              : { ...item, dropdownOpen: false }
+                                          )
+                                        )
+                                      }
+                                      className="inline-flex min-h-[40px] w-full items-center justify-between gap-2 rounded-lg border border-gray-300 px-3 py-2 text-left"
+                                    >
+                                      {matched ? (
+                                        <span className="inline-flex items-center gap-2">
+                                          <img src={matched.avatar} alt="" className="h-6 w-6 rounded-full object-cover" referrerPolicy="no-referrer" />
+                                          <span>{matched.fullName}</span>
+                                        </span>
+                                      ) : (
+                                        <span className="text-gray-600">Send to external user</span>
+                                      )}
+                                      <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
+                                    </button>
+                                    <AnimatePresence>
+                                      {row.dropdownOpen && (
+                                        <motion.div
+                                          initial={{ opacity: 0, y: 6 }}
+                                          animate={{ opacity: 1, y: 0 }}
+                                          exit={{ opacity: 0, y: 6 }}
+                                          className="absolute left-0 top-full z-[260] mt-2 w-full max-h-[200px] overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-xl"
+                                        >
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              setBulkImportRows((prev) =>
+                                                prev.map((item) =>
+                                                  item.id === row.id ? { ...item, matchedPersonId: null, dropdownOpen: false } : item
+                                                )
+                                              )
+                                            }
+                                            className="mb-2 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                          >
+                                            <span>Send to external user</span>
+                                            {!matched && <Check className="h-4 w-4 text-[#7A005D]" />}
+                                          </button>
+                                          <input
+                                            value={row.query}
+                                            onChange={(e) =>
+                                              setBulkImportRows((prev) =>
+                                                prev.map((item) =>
+                                                  item.id === row.id ? { ...item, query: e.target.value } : item
+                                                )
+                                              )
+                                            }
+                                            placeholder="Search employee"
+                                            className="mb-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A005D]/25 focus:border-[#7A005D]"
+                                          />
+                                          {filteredPeople.map((personOption) => (
+                                            <button
+                                              key={personOption.id}
+                                              type="button"
+                                              onClick={() =>
+                                                setBulkImportRows((prev) =>
+                                                  prev.map((item) =>
+                                                    item.id === row.id
+                                                      ? { ...item, matchedPersonId: personOption.id, dropdownOpen: false, query: '' }
+                                                      : item
+                                                  )
+                                                )
+                                              }
+                                              className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                            >
+                                              <span className="inline-flex items-center gap-2">
+                                                <img src={personOption.avatar} alt="" className="h-6 w-6 rounded-full object-cover" referrerPolicy="no-referrer" />
+                                                <span>{personOption.fullName}</span>
+                                              </span>
+                                              {matched?.id === personOption.id && <Check className="h-4 w-4 text-[#7A005D]" />}
+                                            </button>
+                                          ))}
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => setBulkImportRows((prev) => prev.filter((item) => item.id !== row.id))}
+                                    className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-red-600"
+                                    aria-label="Remove row"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
