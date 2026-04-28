@@ -943,6 +943,30 @@ export default function App() {
     showToast(`Message will be sent to ${emailRecipientIds.size} recipient(s)`);
   };
 
+  const handleMenuArrowNavigation = (
+    event: React.KeyboardEvent<HTMLElement>,
+    menuRoot: HTMLElement | null
+  ) => {
+    if (!menuRoot) return;
+    const items = Array.from(
+      menuRoot.querySelectorAll<HTMLElement>('button[data-menu-item="true"]')
+    );
+    if (items.length === 0) return;
+    const activeIndex = items.findIndex((item) => item === document.activeElement);
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      const nextIndex = activeIndex < 0 ? 0 : (activeIndex + 1) % items.length;
+      items[nextIndex]?.focus();
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      const nextIndex =
+        activeIndex < 0 ? items.length - 1 : (activeIndex - 1 + items.length) % items.length;
+      items[nextIndex]?.focus();
+    }
+  };
+
   const fakeRoster = [
     { username: 'Avery Lee', role: 'Product Manager', avatar: 'https://i.pravatar.cc/120?u=avery' },
     { username: 'Noah Kim', role: 'Software Engineer', avatar: 'https://i.pravatar.cc/120?u=noah' },
@@ -974,6 +998,19 @@ export default function App() {
     ? Math.min(5000, Math.max(0, (snackbarTick || Date.now()) - snackbarStartedAt))
     : 0;
   const snackbarProgressDeg = (snackbarElapsedMs / 5000) * 360;
+
+  useEffect(() => {
+    if (!isEmailComposerOpen || emailComposerTab !== 'edit') return;
+    const editor = bodyEditorRef.current;
+    if (!editor) return;
+    const text = editor.textContent?.trim() ?? '';
+    if (!text && !editor.querySelector('[data-chip]')) {
+      editor.innerHTML = '';
+      editor.append(document.createTextNode(defaultEmailBody()));
+      editor.appendChild(buildVariableChipElement('Access type'));
+      refreshBodyWordState();
+    }
+  }, [emailComposerTab, isEmailComposerOpen]);
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 font-sans relative overflow-auto">
@@ -1434,6 +1471,16 @@ export default function App() {
                   onChange={(e) => setInputValue(e.target.value)}
                   placeholder={selectedChips.length === 0 ? "Add people or group" : ""} 
                   onFocus={() => setIsInputFocused(true)}
+                  onKeyDown={(e) => {
+                    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && isInputFocused) {
+                      e.preventDefault();
+                      requestAnimationFrame(() => {
+                        const menu = document.getElementById('main-input-menu');
+                        const firstItem = menu?.querySelector<HTMLElement>('button[data-menu-item="true"]');
+                        firstItem?.focus();
+                      });
+                    }
+                  }}
                   className="flex-1 min-w-[120px] py-1 pl-2 bg-transparent outline-none text-gray-700 placeholder-gray-400"
                 />
               </div>
@@ -1464,7 +1511,9 @@ export default function App() {
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 5 }}
+                    id="main-input-menu"
                     className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-[400px] overflow-y-auto"
+                    onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
                   >
                     {viewMode === 'advanced2' && inputValue.trim() !== '' ? (
                       // Search results for Advanced 2 when typing
@@ -1479,6 +1528,7 @@ export default function App() {
                           .map(person => (
                             <button 
                               key={person.id}
+                              data-menu-item="true"
                               onClick={() => {
                                 addChip(person.names[0]);
                                 setInputValue('');
@@ -1526,6 +1576,7 @@ export default function App() {
                         ].map(option => (
                           <button 
                             key={option.label}
+                            data-menu-item="true"
                             onClick={() => addChip(option.label)}
                             className="w-full px-4 py-2.5 text-left hover:bg-gray-50 transition-colors flex items-center justify-between group"
                           >
@@ -1555,6 +1606,7 @@ export default function App() {
                         ].map(option => (
                           <button 
                             key={option}
+                            data-menu-item="true"
                             onClick={() => addChip(option)}
                             className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-700 transition-colors flex items-center justify-between group"
                           >
@@ -1565,6 +1617,7 @@ export default function App() {
 
                         <div className="px-4 py-2 mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-t border-gray-100 bg-gray-50">Categories</div>
                         <button 
+                          data-menu-item="true"
                           onClick={() => addChip('All... (Managers, Employees, etc.)')}
                           className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-700 transition-colors flex items-center justify-between group"
                         >
@@ -1747,6 +1800,17 @@ export default function App() {
                         onClick={() =>
                           setActiveAccessDropdown(activeAccessDropdown === person.id ? null : person.id)
                         }
+                        onKeyDown={(e) => {
+                          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            setActiveAccessDropdown(person.id);
+                            requestAnimationFrame(() => {
+                              const menu = accessDropdownRef.current;
+                              const firstItem = menu?.querySelector<HTMLElement>('button[data-menu-item="true"]');
+                              firstItem?.focus();
+                            });
+                          }
+                        }}
                         title={person.role}
                         className={`flex max-w-[200px] cursor-pointer items-center gap-0.5 rounded border py-1 text-sm text-gray-700 transition-colors min-w-0 justify-start text-left ${
                           activeAccessDropdown === person.id
@@ -1768,11 +1832,13 @@ export default function App() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
-                            className="absolute left-0 top-full z-[250] mt-2 w-72 max-h-[200px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-2 shadow-2xl"
+                            className="absolute left-0 top-full z-[250] mt-2 w-72 overflow-visible rounded-xl border border-gray-200 bg-white py-2 shadow-2xl"
+                            onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
                           >
                               <button 
                                 type="button"
                                 onClick={() => updateRole(person.id, 'Owner')}
+                                data-menu-item="true"
                                 className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
                               >
                                 <div className="flex items-center justify-between gap-2">
@@ -1783,6 +1849,7 @@ export default function App() {
                               <button 
                                 type="button"
                                 onClick={() => updateRole(person.id, 'Editor')}
+                                data-menu-item="true"
                                 className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
                               >
                                 <div className="flex items-center justify-between gap-2">
@@ -1793,6 +1860,7 @@ export default function App() {
                               <button 
                                 type="button"
                                 onClick={() => updateRole(person.id, 'Collaborator')}
+                                data-menu-item="true"
                                 className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
                               >
                                 <div className="flex items-center justify-between gap-2">
@@ -1803,6 +1871,7 @@ export default function App() {
                               <button 
                                 type="button"
                                 onClick={() => updateRole(person.id, 'View as owner')}
+                                data-menu-item="true"
                                 className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium flex items-center justify-between gap-2"
                               >
                                 <span>View as owner</span>
@@ -1811,6 +1880,7 @@ export default function App() {
                               <button 
                                 type="button"
                                 onClick={() => updateRole(person.id, 'View as viewer')}
+                                data-menu-item="true"
                                 className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium flex items-center justify-between gap-2"
                               >
                                 <span>View as viewer</span>
@@ -1819,6 +1889,7 @@ export default function App() {
                               <button 
                                 type="button"
                                 onClick={() => updateRole(person.id, 'Explore as owner')}
+                                data-menu-item="true"
                                 className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium flex items-center justify-between gap-2"
                               >
                                 <span>Explore as owner</span>
@@ -1832,6 +1903,7 @@ export default function App() {
                                     setPendingTransferPersonId(person.id);
                                     setActiveAccessDropdown(null);
                                   }}
+                                  data-menu-item="true"
                                   className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium"
                                 >
                                   Transfer ownership
@@ -1848,13 +1920,14 @@ export default function App() {
                                   }
                                   setActiveAccessDropdown(null);
                                 }}
+                                data-menu-item="true"
                                 className="group w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium"
                               >
                                 <span className="inline-flex items-center gap-1.5">
                                   {person.expirationDate ? 'Remove expiration' : 'Add expiration'}
                                   <span className="relative inline-flex items-center group/exp-help">
                                     <HelpCircle className="h-3.5 w-3.5 text-gray-400" />
-                                    <span className="pointer-events-none invisible absolute left-0 top-full z-[300] mt-2 w-[340px] rounded-lg border border-gray-200 bg-white p-2 text-xs leading-relaxed text-gray-700 opacity-0 shadow-xl transition-all group-hover/exp-help:visible group-hover/exp-help:opacity-100">
+                                    <span className="pointer-events-none invisible absolute left-0 top-full z-[500] mt-2 w-[340px] rounded-lg border border-gray-200 bg-white p-2 text-xs leading-relaxed text-gray-700 opacity-0 shadow-xl transition-all group-hover/exp-help:visible group-hover/exp-help:opacity-100">
                                       Once access expires, this group will no longer be able to access the document. If the artifact is currently set to "Company-wide" or "Anyone with the link," it will automatically switch to "Restricted" after expiration.
                                     </span>
                                   </span>
@@ -1870,6 +1943,7 @@ export default function App() {
                                       removePerson(person.id);
                                       setActiveAccessDropdown(null);
                                     }}
+                                    data-menu-item="true"
                                     className="w-full px-4 py-3 text-left hover:bg-red-50 text-sm text-red-600 font-medium transition-colors"
                                   >
                                     Remove
@@ -1986,6 +2060,17 @@ export default function App() {
                         setGeneralScopeDropdownOpen((o) => !o);
                         setGeneralRoleDropdownOpen(false);
                       }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          setGeneralScopeDropdownOpen(true);
+                          requestAnimationFrame(() => {
+                            const menu = generalScopeDropdownRef.current;
+                            const firstItem = menu?.querySelector<HTMLElement>('button[data-menu-item="true"]');
+                            firstItem?.focus();
+                          });
+                        }
+                      }}
                       className="w-full text-left rounded-lg px-0 py-0.5 hover:opacity-90 transition-opacity"
                     >
                       <div className="flex items-start justify-between gap-1 min-w-0">
@@ -2064,6 +2149,7 @@ export default function App() {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 4 }}
                           className="absolute left-0 top-full mt-1.5 z-[250] w-[240px] max-h-[200px] overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-2xl py-1"
+                          onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
                         >
                           {(
                             [
@@ -2075,6 +2161,7 @@ export default function App() {
                             <button
                               key={opt.key}
                               type="button"
+                              data-menu-item="true"
                               onClick={() => {
                                 setGeneralAccessScope(opt.key);
                                 if (opt.key === 'restricted') {
@@ -2118,6 +2205,17 @@ export default function App() {
                           });
                           setGeneralScopeDropdownOpen(false);
                         }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            setGeneralRoleDropdownOpen(true);
+                            requestAnimationFrame(() => {
+                              const menu = generalRoleMenuListRef.current;
+                              const firstItem = menu?.querySelector<HTMLElement>('button[data-menu-item="true"]');
+                              firstItem?.focus();
+                            });
+                          }
+                        }}
                         className="inline-flex min-h-[40px] max-w-[min(220px,100%)] cursor-pointer items-center gap-0.5 rounded-lg bg-transparent py-2 pl-3 pr-2 text-left text-sm font-medium text-gray-800 transition-colors"
                       >
                         <span className="min-w-0 flex-1 truncate">
@@ -2133,10 +2231,12 @@ export default function App() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
-                            className="absolute right-0 top-full z-[250] mt-2 w-72 max-h-[200px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-2xl"
+                            className="absolute right-0 top-full z-[250] mt-2 w-72 overflow-visible rounded-xl border border-gray-200 bg-white py-1 shadow-2xl"
+                            onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
                           >
                               <button
                                 type="button"
+                                data-menu-item="true"
                                 onClick={() => {
                                   setGeneralLinkAccessRole('Owner');
                                   setGeneralRoleDropdownOpen(false);
@@ -2152,6 +2252,7 @@ export default function App() {
                               </button>
                               <button
                                 type="button"
+                                data-menu-item="true"
                                 onClick={() => {
                                   setGeneralLinkAccessRole('Editor');
                                   setGeneralRoleDropdownOpen(false);
@@ -2167,6 +2268,7 @@ export default function App() {
                               </button>
                               <button
                                 type="button"
+                                data-menu-item="true"
                                 onClick={() => {
                                   setGeneralLinkAccessRole('Collaborator');
                                   setGeneralRoleDropdownOpen(false);
@@ -2182,6 +2284,7 @@ export default function App() {
                               </button>
                               <button
                                 type="button"
+                                data-menu-item="true"
                                 onClick={() => {
                                   setGeneralLinkAccessRole('View as owner');
                                   setGeneralRoleDropdownOpen(false);
@@ -2195,6 +2298,7 @@ export default function App() {
                               </button>
                               <button
                                 type="button"
+                                data-menu-item="true"
                                 onClick={() => {
                                   setGeneralLinkAccessRole('View as viewer');
                                   setGeneralRoleDropdownOpen(false);
@@ -2208,6 +2312,7 @@ export default function App() {
                               </button>
                               <button
                                 type="button"
+                                data-menu-item="true"
                                 onClick={() => {
                                   setGeneralLinkAccessRole('Explore as owner');
                                   setGeneralRoleDropdownOpen(false);
@@ -2223,6 +2328,7 @@ export default function App() {
 
                               <button
                                 type="button"
+                                data-menu-item="true"
                                 onClick={() => {
                                   if (generalLinkExpirationIso) {
                                     setGeneralLinkExpirationIso(null);
@@ -2238,7 +2344,7 @@ export default function App() {
                                   {generalLinkExpirationIso ? 'Remove expiration' : 'Add expiration'}
                                   <span className="relative inline-flex items-center group/general-exp-help">
                                     <HelpCircle className="h-3.5 w-3.5 text-gray-400" />
-                                    <span className="pointer-events-none invisible absolute left-0 top-full z-[300] mt-2 w-[340px] rounded-lg border border-gray-200 bg-white p-2 text-xs leading-relaxed text-gray-700 opacity-0 shadow-xl transition-all group-hover/general-exp-help:visible group-hover/general-exp-help:opacity-100">
+                                    <span className="pointer-events-none invisible absolute left-0 top-full z-[500] mt-2 w-[340px] rounded-lg border border-gray-200 bg-white p-2 text-xs leading-relaxed text-gray-700 opacity-0 shadow-xl transition-all group-hover/general-exp-help:visible group-hover/general-exp-help:opacity-100">
                                       Once access expires, this group will no longer be able to access the document. If the artifact is currently set to "Company-wide" or "Anyone with the link," it will automatically switch to "Restricted" after expiration.
                                     </span>
                                   </span>
@@ -2417,6 +2523,23 @@ export default function App() {
                                             )
                                           );
                                         }}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                                            e.preventDefault();
+                                            setBulkImportRows((prev) =>
+                                              prev.map((item) =>
+                                                item.id === row.id
+                                                  ? { ...item, dropdownOpen: true }
+                                                  : item
+                                              )
+                                            );
+                                            requestAnimationFrame(() => {
+                                              const menu = document.querySelector<HTMLElement>(`[data-bulk-menu="${row.id}"]`);
+                                              const first = menu?.querySelector<HTMLElement>('button[data-menu-item="true"]');
+                                              first?.focus();
+                                            });
+                                          }
+                                        }}
                                         className="min-h-[40px] w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#7A005D]/25 focus:border-[#7A005D]"
                                       />
                                       <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
@@ -2427,11 +2550,14 @@ export default function App() {
                                           initial={{ opacity: 0, y: 6 }}
                                           animate={{ opacity: 1, y: 0 }}
                                           exit={{ opacity: 0, y: 6 }}
+                                          data-bulk-menu={row.id}
                                           className="absolute left-0 top-full z-[400] mt-2 w-full max-h-[220px] overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-xl"
+                                          onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
                                         >
                                           {row.query.trim() === '' && (
                                             <button
                                               type="button"
+                                              data-menu-item="true"
                                               onClick={() =>
                                                 setBulkImportRows((prev) =>
                                                   prev.map((item) =>
@@ -2451,6 +2577,7 @@ export default function App() {
                                             <button
                                               key={personOption.id}
                                               type="button"
+                                              data-menu-item="true"
                                               onClick={() => {
                                                 const alreadyAssigned = bulkImportRows.some(
                                                   (entry) => entry.id !== row.id && entry.matchedPersonId === personOption.id
