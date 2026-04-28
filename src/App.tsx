@@ -369,6 +369,7 @@ export default function App() {
   const accessDropdownRef = useRef<HTMLDivElement>(null);
   const generalScopeDropdownRef = useRef<HTMLDivElement>(null);
   const generalRoleDropdownRef = useRef<HTMLDivElement>(null);
+  const generalRoleMenuListRef = useRef<HTMLDivElement>(null);
   const expirationCalendarPopoverRef = useRef<HTMLDivElement>(null);
   const generalExpirationCalendarPopoverRef = useRef<HTMLDivElement>(null);
   const variableMenuRef = useRef<HTMLDivElement>(null);
@@ -378,14 +379,25 @@ export default function App() {
   const [calendarOpenPersonId, setCalendarOpenPersonId] = useState<string | null>(null);
 
   const bulkDirectory: BulkDirectoryPerson[] = [
-    { id: 'emp-1001', fullName: 'Harry Porter', email: 'harry.porter@company.com', employeeId: 'E1001', avatar: 'https://i.pravatar.cc/120?u=harry-porter' },
-    { id: 'emp-1002', fullName: 'Location Team', email: 'location@company.com', employeeId: 'E1002', avatar: 'https://i.pravatar.cc/120?u=location-team' },
-    { id: 'emp-1003', fullName: 'Department Group', email: 'department@company.com', employeeId: 'E1003', avatar: 'https://i.pravatar.cc/120?u=department-group' },
-    { id: 'emp-1004', fullName: 'Reports Group', email: 'reports@company.com', employeeId: 'E1004', avatar: 'https://i.pravatar.cc/120?u=reports-group' },
-    { id: 'emp-1005', fullName: 'Business Partner', email: 'business.partner@company.com', employeeId: 'E1005', avatar: 'https://i.pravatar.cc/120?u=business-partner' },
-    { id: 'emp-1006', fullName: 'Client Group', email: 'client.group@company.com', employeeId: 'E1006', avatar: 'https://i.pravatar.cc/120?u=client-group' },
-    { id: 'emp-1007', fullName: 'Application Recruiter', email: 'application.recruiter@company.com', employeeId: 'E1007', avatar: 'https://i.pravatar.cc/120?u=application-recruiter' },
-  ];
+    'Harry Porter', 'Avery Lee', 'Noah Kim', 'Riley Patel', 'Jordan Smith', 'Taylor Nguyen', 'Skyler Brown', 'Casey Johnson',
+    'Morgan Davis', 'Elliot Turner', 'Parker Hall', 'Logan Gray', 'Dakota Young', 'Cameron Rivera', 'Blake Collins',
+    'Rowan Hughes', 'Quinn Foster', 'Jamie Brooks', 'Alex Morgan', 'Sam Carter', 'Chris Bennett', 'Drew Adams',
+    'Robin Flores', 'Charlie Ward', 'Finley James', 'Emerson Cook', 'Hayden Bell', 'Kai Watson', 'Sage Ross', 'Ari Cooper',
+    'Reese Richardson', 'Micah Sanders', 'Kendall Price', 'Payton Kelly', 'Shawn Patterson', 'Bailey Murphy', 'Corey Barnes',
+    'Jules Diaz', 'River Henderson', 'Peyton Stewart', 'Marley Jenkins', 'Toby Perry', 'Sidney Powell', 'Phoenix Long',
+    'Remy Hughes', 'Nico Coleman', 'Lane Simmons', 'Dylan Fisher', 'Harper Griffin', 'Parker Woods', 'Rory Bryant',
+    'Emery Russell', 'Dakota Coleman', 'Robin Hayes', 'Jaden Foster'
+  ].map((fullName, index) => {
+    const normalized = fullName.toLowerCase().replace(/\s+/g, '.');
+    const employeeId = `E${(1001 + index).toString().padStart(4, '0')}`;
+    return {
+      id: `emp-${1001 + index}`,
+      fullName,
+      email: `${normalized}@company.com`,
+      employeeId,
+      avatar: `https://i.pravatar.cc/120?u=${encodeURIComponent(fullName)}`,
+    };
+  });
 
   const detectBulkIdentifierType = (value: string): BulkIdentifierType => {
     const trimmed = value.trim();
@@ -2015,7 +2027,17 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => {
-                          setGeneralRoleDropdownOpen((o) => !o);
+                          setGeneralRoleDropdownOpen((o) => {
+                            const next = !o;
+                            if (next) {
+                              requestAnimationFrame(() => {
+                                if (generalRoleMenuListRef.current) {
+                                  generalRoleMenuListRef.current.scrollTop = 0;
+                                }
+                              });
+                            }
+                            return next;
+                          });
                           setGeneralScopeDropdownOpen(false);
                         }}
                         className="inline-flex min-h-[40px] max-w-[min(220px,100%)] cursor-pointer items-center gap-0.5 rounded-lg bg-transparent py-2 pl-3 pr-2 text-left text-sm font-medium text-gray-800 transition-colors"
@@ -2029,10 +2051,11 @@ export default function App() {
                       <AnimatePresence>
                         {generalRoleDropdownOpen && (
                           <motion.div
+                            ref={generalRoleMenuListRef}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
-                            className="absolute right-0 top-full z-[250] mt-2 w-72 max-h-[200px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-2 shadow-2xl"
+                            className="absolute right-0 top-full z-[250] mt-2 w-72 max-h-[200px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-2xl"
                           >
                               <button
                                 type="button"
@@ -2118,7 +2141,7 @@ export default function App() {
                                   <CheckCircle2 className="h-4 w-4 shrink-0 text-[#7A005D]" />
                                 )}
                               </button>
-                              <div className="my-2 border-t border-gray-100" />
+                              <div className="my-1 border-t border-gray-100" />
 
                               <button
                                 type="button"
@@ -2252,7 +2275,7 @@ export default function App() {
                     </div>
                   </div>
                   {bulkImportRows.length > 0 && (
-                    <div className="mt-5 overflow-hidden rounded-xl border border-gray-200">
+                    <div className="relative z-[60] mt-5 overflow-visible rounded-xl border border-gray-200">
                       <table className="min-w-full text-left">
                         <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                           <tr>
@@ -2294,43 +2317,48 @@ export default function App() {
                                 </td>
                                 <td className="px-4 py-3">
                                   <div className="relative">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setBulkImportRows((prev) =>
-                                          prev.map((item) =>
-                                            item.id === row.id
-                                              ? { ...item, dropdownOpen: !item.dropdownOpen }
-                                              : { ...item, dropdownOpen: false }
+                                    <div className="relative">
+                                      <input
+                                        value={row.query || matched?.fullName || (row.matchedPersonId === null ? 'Send to external user' : '')}
+                                        onFocus={() =>
+                                          setBulkImportRows((prev) =>
+                                            prev.map((item) =>
+                                              item.id === row.id
+                                                ? { ...item, dropdownOpen: true }
+                                                : { ...item, dropdownOpen: false }
+                                            )
                                           )
-                                        )
-                                      }
-                                      className="inline-flex min-h-[40px] w-full items-center justify-between gap-2 rounded-lg border border-gray-300 px-3 py-2 text-left"
-                                    >
-                                      {matched ? (
-                                        <span className="inline-flex items-center gap-2">
-                                          <img src={matched.avatar} alt="" className="h-6 w-6 rounded-full object-cover" referrerPolicy="no-referrer" />
-                                          <span>{matched.fullName}</span>
-                                        </span>
-                                      ) : (
-                                        <span className="text-gray-600">Send to external user</span>
-                                      )}
-                                      <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
-                                    </button>
+                                        }
+                                        onChange={(e) => {
+                                          const nextValue = e.target.value;
+                                          setBulkImportRows((prev) =>
+                                            prev.map((item) =>
+                                              item.id === row.id
+                                                ? { ...item, query: nextValue, dropdownOpen: true, matchedPersonId: null }
+                                                : item
+                                            )
+                                          );
+                                        }}
+                                        className="min-h-[40px] w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#7A005D]/25 focus:border-[#7A005D]"
+                                      />
+                                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                                    </div>
                                     <AnimatePresence>
                                       {row.dropdownOpen && (
                                         <motion.div
                                           initial={{ opacity: 0, y: 6 }}
                                           animate={{ opacity: 1, y: 0 }}
                                           exit={{ opacity: 0, y: 6 }}
-                                          className="absolute left-0 top-full z-[260] mt-2 w-full max-h-[200px] overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-xl"
+                                          className="absolute left-0 top-full z-[400] mt-2 w-full max-h-[220px] overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-xl"
                                         >
                                           <button
                                             type="button"
                                             onClick={() =>
                                               setBulkImportRows((prev) =>
                                                 prev.map((item) =>
-                                                  item.id === row.id ? { ...item, matchedPersonId: null, dropdownOpen: false } : item
+                                                  item.id === row.id
+                                                    ? { ...item, matchedPersonId: null, dropdownOpen: false, query: '' }
+                                                    : item
                                                 )
                                               )
                                             }
@@ -2339,31 +2367,26 @@ export default function App() {
                                             <span>Send to external user</span>
                                             {!matched && <Check className="h-4 w-4 text-[#7A005D]" />}
                                           </button>
-                                          <input
-                                            value={row.query}
-                                            onChange={(e) =>
-                                              setBulkImportRows((prev) =>
-                                                prev.map((item) =>
-                                                  item.id === row.id ? { ...item, query: e.target.value } : item
-                                                )
-                                              )
-                                            }
-                                            placeholder="Search employee"
-                                            className="mb-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A005D]/25 focus:border-[#7A005D]"
-                                          />
                                           {filteredPeople.map((personOption) => (
                                             <button
                                               key={personOption.id}
                                               type="button"
-                                              onClick={() =>
+                                              onClick={() => {
+                                                const alreadyAssigned = bulkImportRows.some(
+                                                  (entry) => entry.id !== row.id && entry.matchedPersonId === personOption.id
+                                                );
+                                                if (alreadyAssigned) {
+                                                  showToast(`${personOption.fullName} is already matched in another row`);
+                                                  return;
+                                                }
                                                 setBulkImportRows((prev) =>
                                                   prev.map((item) =>
                                                     item.id === row.id
-                                                      ? { ...item, matchedPersonId: personOption.id, dropdownOpen: false, query: '' }
+                                                      ? { ...item, matchedPersonId: personOption.id, dropdownOpen: false, query: personOption.fullName }
                                                       : item
                                                   )
-                                                )
-                                              }
+                                                );
+                                              }}
                                               className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50"
                                             >
                                               <span className="inline-flex items-center gap-2">
