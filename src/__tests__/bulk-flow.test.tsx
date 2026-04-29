@@ -105,7 +105,7 @@ describe('Bulk add individuals flow', () => {
     assertNoErrorBoundary();
   });
 
-  it('6 Add row five times after one import yields six rows and independent people dropdowns', async () => {
+  it('6 Add row five times after one import: six distinct rows, unique ids, one dropdown at a time', async () => {
     const user = userEvent.setup();
     render(<App />);
     const dialog = await openBulkModal(user);
@@ -121,16 +121,16 @@ describe('Bulk add individuals flow', () => {
     const table = within(dialog).getByRole('table');
     const tbodyRows = table.querySelectorAll('tbody tr');
     expect(tbodyRows.length).toBeGreaterThanOrEqual(6);
-    const firstDataRow = tbodyRows[0] as HTMLElement;
-    const lastDataRow = tbodyRows[5] as HTMLElement;
-    const firstPeople = within(firstDataRow).getAllByRole('textbox')[1]!;
-    const lastPeople = within(lastDataRow).getAllByRole('textbox')[1]!;
+    const heading = within(dialog).getByRole('heading', {name: /Bulk add individuals/i});
 
-    await user.click(firstPeople);
-    await waitFor(() => expect(document.querySelectorAll('[data-bulk-menu]').length).toBe(1));
-
-    await user.click(lastPeople);
-    await waitFor(() => expect(document.querySelectorAll('[data-bulk-menu]').length).toBe(1));
+    for (let r = 0; r < 6; r++) {
+      const row = tbodyRows[r] as HTMLElement;
+      const people = within(row).getAllByRole('textbox')[1]!;
+      await user.click(people);
+      await waitFor(() => expect(document.querySelectorAll('[data-bulk-menu]').length).toBe(1));
+      fireEvent.mouseDown(heading);
+      await waitFor(() => expect(document.querySelectorAll('[data-bulk-menu]').length).toBe(0));
+    }
 
     assertNoErrorBoundary();
   });
@@ -205,6 +205,9 @@ describe('Bulk add individuals flow', () => {
     expect(screen.getByText(/people\/groups selected/i)).toBeInTheDocument();
     expect(screen.getAllByText('Harry Porter').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Avery Lee').length).toBeGreaterThanOrEqual(1);
+    const snackbar = document.querySelector('[data-snackbar-root]');
+    expect(snackbar).toBeTruthy();
+    expect(snackbar?.getAttribute('data-snackbar-tone')).toBe('success');
     assertNoErrorBoundary();
   });
 });
