@@ -385,7 +385,6 @@ export default function App() {
 
   const [isEmailComposerOpen, setIsEmailComposerOpen] = useState(false);
   const [emailRecipientIds, setEmailRecipientIds] = useState<Set<string>>(new Set());
-  const [emailRecipientsExpanded, setEmailRecipientsExpanded] = useState(true);
   const [collapsedRecipientBuckets, setCollapsedRecipientBuckets] = useState<Set<EmailComposerBucket>>(new Set());
   const [emailComposerTab, setEmailComposerTab] = useState<'edit' | 'preview'>('edit');
   const [emailSubject, setEmailSubject] = useState('Harry Porter shared document with you');
@@ -889,7 +888,6 @@ export default function App() {
   }, [people.length]);
 
   useEffect(() => {
-    if (isEmailComposerOpen) setEmailRecipientsExpanded(true);
     if (isEmailComposerOpen) setCollapsedRecipientBuckets(new Set());
   }, [isEmailComposerOpen]);
 
@@ -1097,6 +1095,12 @@ export default function App() {
   );
   const canCommitBulkAdd =
     bulkImportRows.length > 0 && !bulkHasEmptyIdentifier && !bulkHasMatchConflict;
+  const visibleRecipientBuckets = EMAIL_COMPOSER_BUCKET_ORDER.filter((bucket) =>
+    people.some((p) => emailComposerBucket(p.role) === bucket)
+  );
+  const areAllRecipientBucketsCollapsed =
+    visibleRecipientBuckets.length > 0 &&
+    visibleRecipientBuckets.every((bucket) => collapsedRecipientBuckets.has(bucket));
 
   useEffect(() => {
     if (!isEmailComposerOpen || emailComposerTab !== 'edit') return;
@@ -1269,19 +1273,23 @@ export default function App() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => setEmailRecipientsExpanded((v) => !v)}
+                  onClick={() => {
+                    if (areAllRecipientBucketsCollapsed) {
+                      setCollapsedRecipientBuckets(new Set());
+                      return;
+                    }
+                    setCollapsedRecipientBuckets(new Set(visibleRecipientBuckets));
+                  }}
                   className="text-sm font-medium text-[#7A005D] hover:underline"
                 >
-                  {emailRecipientsExpanded ? 'Collapse all recipients' : 'View all recipients'}
+                  {areAllRecipientBucketsCollapsed ? 'View all recipients' : 'Collapse all recipients'}
                 </button>
               </div>
-              {emailRecipientsExpanded && (
               <div className="space-y-4 shrink-0 pr-1">
-                {EMAIL_COMPOSER_BUCKET_ORDER.map((bucket) => {
+                {visibleRecipientBuckets.map((bucket) => {
                   const members = people.filter(
                     (p) => emailComposerBucket(p.role) === bucket
                   );
-                  if (members.length === 0) return null;
                   const itemCount = members.reduce((sum, p) => sum + p.names.length, 0);
                   const ids = members.map((m) => m.id);
                   const selectedInBucket = ids.filter((id) =>
@@ -1347,7 +1355,6 @@ export default function App() {
                   );
                 })}
               </div>
-              )}
               <div className="flex min-h-[min(480px,58vh)] flex-1 flex-col gap-3 overflow-hidden">
                 <div className="inline-flex h-10 w-[200px] max-w-full shrink-0 items-center rounded-xl border border-gray-300 p-0.5">
                   <button
@@ -1460,7 +1467,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="h-[120px] min-h-[120px] resize-y overflow-auto p-4 text-sm text-gray-800">
+                  <div className="h-[160px] min-h-[160px] resize-y overflow-auto p-4 text-sm text-gray-800">
                     {emailComposerTab === 'preview' ? (
                       <div className="rounded-2xl border border-gray-200 bg-[#F8FAFC] p-6">
                         <div className="text-[12px] font-semibold uppercase tracking-wide text-[#6B7280]">Subject</div>
@@ -1535,7 +1542,7 @@ export default function App() {
                       <div className="mt-2 text-[20px] font-semibold text-[#111827]">{emailSubject || defaultEmailSubject()}</div>
                       <div className="my-4 h-px bg-gray-200" />
                       <div className="text-[12px] font-semibold uppercase tracking-wide text-[#6B7280]">Body</div>
-                      <div className="mt-3 h-[120px] min-h-[120px] resize-y overflow-auto text-[16px] leading-relaxed text-[#111827]">
+                      <div className="mt-3 h-[160px] min-h-[160px] resize-y overflow-auto text-[16px] leading-relaxed text-[#111827]">
                         <div dangerouslySetInnerHTML={{ __html: emailBodyHtml || `${defaultEmailBody()}<br/>• {Document names}` }} />
                       </div>
                     </div>

@@ -38,7 +38,7 @@ export function HoverTooltip({
   const [style, setStyle] = useState<React.CSSProperties>({
     position: 'fixed',
     opacity: 0,
-    zIndex: 1500,
+    zIndex: 3000,
   });
 
   const clearOpenTimer = () => {
@@ -104,7 +104,7 @@ export function HoverTooltip({
       position: 'fixed',
       top,
       left,
-      zIndex: 1500,
+      zIndex: 3000,
       opacity: 1,
     });
   }, [open, placement, align]);

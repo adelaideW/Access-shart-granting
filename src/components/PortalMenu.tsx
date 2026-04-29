@@ -60,7 +60,7 @@ export function PortalMenu({
   const [motionStyle, setMotionStyle] = useState<React.CSSProperties>({
     position: 'fixed',
     opacity: 0,
-    zIndex: 1500,
+    zIndex: 3000,
   });
 
   const setRefs = useCallback(
@@ -108,7 +108,7 @@ export function PortalMenu({
       top,
       left,
       width: width === 'trigger' ? rect.width : menuWidth,
-      zIndex: 1500,
+      zIndex: 3000,
       opacity: 1,
     });
   }, [open, resolveTrigger, placement, align, width, offset, nudgeX]);
