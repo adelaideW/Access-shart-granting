@@ -54,7 +54,7 @@ describe('Bulk add individuals flow', () => {
     await user.click(within(dialog).getByRole('button', {name: 'Import'}));
 
     await user.click(within(dialog).getByDisplayValue('Avery Lee'));
-    await user.click(within(dialog).getByRole('button', {name: /^Harry Porter$/}));
+    await user.click(screen.getByRole('button', {name: /^Harry Porter$/}));
 
     expect(document.querySelectorAll('[data-bulk-warning="true"]').length).toBe(2);
     expect(within(dialog).getByRole('button', {name: /^Add$/})).toBeDisabled();
@@ -74,7 +74,7 @@ describe('Bulk add individuals flow', () => {
     await user.click(within(dialog).getByRole('button', {name: 'Import'}));
 
     await user.click(within(dialog).getByDisplayValue('Avery Lee'));
-    await user.click(within(dialog).getByRole('button', {name: /^Harry Porter$/}));
+    await user.click(screen.getByRole('button', {name: /^Harry Porter$/}));
     expect(within(dialog).getByRole('button', {name: /^Add$/})).toBeDisabled();
 
     const harryInputs = within(dialog).getAllByDisplayValue('Harry Porter');
@@ -82,7 +82,7 @@ describe('Bulk add individuals flow', () => {
     const row2People = harryInputs[1]!;
     await user.click(row2People);
     fireEvent.change(row2People, {target: {value: 'Noah'}});
-    const noahOption = await within(dialog).findByRole('button', {name: /^Noah Kim$/});
+    const noahOption = await screen.findByRole('button', {name: /^Noah Kim$/});
     await user.click(noahOption);
 
     expect(document.querySelectorAll('[data-bulk-warning="true"]').length).toBe(0);
@@ -149,7 +149,7 @@ describe('Bulk add individuals flow', () => {
     expect(peopleInputs).toHaveLength(2);
     for (const input of peopleInputs) {
       await user.click(input);
-      const externalButtons = within(dialog).getAllByRole('button', {name: externalLabel});
+      const externalButtons = screen.getAllByRole('button', {name: externalLabel});
       await user.click(externalButtons[0]!);
     }
     expect(document.querySelectorAll('[data-bulk-warning="true"]').length).toBe(0);
@@ -178,11 +178,11 @@ describe('Bulk add individuals flow', () => {
     await user.click(within(dialog).getByRole('button', {name: 'Import'}));
 
     await user.click(within(dialog).getByDisplayValue('Harry Porter'));
-    expect(within(dialog).getByRole('button', {name: sendExternal})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: sendExternal})).toBeInTheDocument();
 
     fireEvent.mouseDown(within(dialog).getByRole('heading', {name: /Bulk add individuals/i}));
     await waitFor(() =>
-      expect(within(dialog).queryByRole('button', {name: sendExternal})).not.toBeInTheDocument(),
+      expect(screen.queryByRole('button', {name: sendExternal})).not.toBeInTheDocument(),
     );
     assertNoErrorBoundary();
   });

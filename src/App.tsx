@@ -44,6 +44,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SnackbarToneIcon } from './components/SnackbarToneIcon.tsx';
+import { PortalMenu } from './components/PortalMenu.tsx';
+import { HoverTooltip } from './components/HoverTooltip.tsx';
 import {
   DEMO_BULK_DIRECTORY,
   detectBulkIdentifierType,
@@ -442,17 +444,26 @@ export default function App() {
   }, []);
 
   const transferSearchRef = useRef<HTMLDivElement>(null);
+  const transferRowTriggerRef = useRef<HTMLDivElement | null>(null);
   const peopleRowsScrollRef = useRef<HTMLDivElement>(null);
   const previousPeopleCountRef = useRef(people.length);
   const inputRef = useRef<HTMLDivElement>(null);
+  const mainInputMenuRef = useRef<HTMLDivElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const accessDropdownRef = useRef<HTMLDivElement>(null);
+  const accessDropdownMenuRef = useRef<HTMLDivElement>(null);
   const generalScopeDropdownRef = useRef<HTMLDivElement>(null);
+  const generalScopeTriggerRef = useRef<HTMLDivElement>(null);
+  const generalScopeMenuRef = useRef<HTMLDivElement>(null);
   const generalRoleDropdownRef = useRef<HTMLDivElement>(null);
   const generalRoleMenuListRef = useRef<HTMLDivElement>(null);
   const expirationCalendarPopoverRef = useRef<HTMLDivElement>(null);
   const generalExpirationCalendarPopoverRef = useRef<HTMLDivElement>(null);
   const variableMenuRef = useRef<HTMLDivElement>(null);
+  const variableMenuPortalRef = useRef<HTMLDivElement>(null);
+  const bulkPeopleWrapRefs = useRef<Partial<Record<string, HTMLDivElement>>>({});
+  const expirationDateTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const generalLinkExpirationTriggerRef = useRef<HTMLButtonElement | null>(null);
   const bodyEditorRef = useRef<HTMLDivElement>(null);
   const draggedChipRef = useRef<HTMLElement | null>(null);
 
@@ -605,8 +616,8 @@ export default function App() {
       </div>
     );
 
-    return (
-      <div className="relative group/tags-cell w-full flex items-center min-h-[30px]" ref={containerRef}>
+    const tagsBody = (
+      <div className="relative w-full flex items-center min-h-[30px]" ref={containerRef}>
         {/* Hidden measuring container */}
         {!isSingle && (
           <div 
@@ -638,13 +649,19 @@ export default function App() {
             </div>
           )}
         </div>
-        
-        {/* Tooltip for all tags - only for non-owners when multiple names exist */}
-        {!isSingle && names.length > 1 && (
-          <>
-            <div className="pointer-events-none absolute inset-0 z-10 cursor-help" aria-hidden />
-            <div className="absolute left-0 bottom-full mb-2 p-4 bg-[#F3F4F6] text-[#1f2937] rounded-2xl opacity-0 invisible group-hover/tags-cell:opacity-100 group-hover/tags-cell:visible transition-all z-[1500] w-80 shadow-2xl border border-gray-300 pointer-events-none">
-              <div className="font-bold text-sm mb-2">All people/groups:</div>
+      </div>
+    );
+
+    if (!isSingle && names.length > 1) {
+      return (
+        <HoverTooltip
+          wrapperClassName="block w-full cursor-help"
+          placement="top"
+          align="start"
+          className="w-80 rounded-2xl border border-gray-300 bg-[#F3F4F6] p-4 text-[#1f2937] shadow-2xl"
+          content={
+            <>
+              <div className="text-sm font-bold mb-2">All people/groups:</div>
               <div className="h-[1px] bg-gray-300 mb-3" />
               <div className="flex flex-wrap gap-2">
                 {names.map((name, idx) => (
@@ -653,11 +670,15 @@ export default function App() {
                   </div>
                 ))}
               </div>
-            </div>
-          </>
-        )}
-      </div>
-    );
+            </>
+          }
+        >
+          {tagsBody}
+        </HoverTooltip>
+      );
+    }
+
+    return tagsBody;
   };
 
   const removeNameFromPerson = (id: string, name: string) => {
@@ -773,46 +794,58 @@ export default function App() {
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as HTMLElement | null;
-      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+      const node = event.target as Node | null;
+      if (
+        inputRef.current &&
+        !inputRef.current.contains(node as Node) &&
+        !mainInputMenuRef.current?.contains(node as Node)
+      ) {
         setIsInputFocused(false);
       }
-      if (accessDropdownRef.current && !accessDropdownRef.current.contains(event.target as Node)) {
+      if (
+        accessDropdownRef.current &&
+        !accessDropdownRef.current.contains(node as Node) &&
+        !accessDropdownMenuRef.current?.contains(node as Node)
+      ) {
         setActiveAccessDropdown(null);
       }
-      if (transferSearchRef.current && !transferSearchRef.current.contains(event.target as Node)) {
+      if (transferSearchRef.current && !transferSearchRef.current.contains(node as Node)) {
         setEditingRowId(null);
       }
       if (
         generalScopeDropdownRef.current &&
-        !generalScopeDropdownRef.current.contains(event.target as Node)
+        !generalScopeDropdownRef.current.contains(node as Node) &&
+        !generalScopeMenuRef.current?.contains(node as Node)
       ) {
         setGeneralScopeDropdownOpen(false);
       }
       if (
         generalRoleDropdownRef.current &&
-        !generalRoleDropdownRef.current.contains(event.target as Node)
+        !generalRoleDropdownRef.current.contains(node as Node) &&
+        !generalRoleMenuListRef.current?.contains(node as Node)
       ) {
         setGeneralRoleDropdownOpen(false);
       }
       if (
         expirationCalendarPopoverRef.current &&
-        !expirationCalendarPopoverRef.current.contains(event.target as Node)
+        !expirationCalendarPopoverRef.current.contains(node as Node)
       ) {
         setCalendarOpenPersonId(null);
       }
       if (
         generalExpirationCalendarPopoverRef.current &&
-        !generalExpirationCalendarPopoverRef.current.contains(event.target as Node)
+        !generalExpirationCalendarPopoverRef.current.contains(node as Node)
       ) {
         setCalendarGeneralLinkOpen(false);
       }
       if (
         variableMenuRef.current &&
-        !variableMenuRef.current.contains(event.target as Node)
+        !variableMenuRef.current.contains(node as Node) &&
+        !variableMenuPortalRef.current?.contains(node as Node)
       ) {
         setIsVariableMenuOpen(false);
       }
-      if (!target?.closest('[data-people-selector]')) {
+      if (!target?.closest('[data-people-selector]') && !target?.closest('[data-bulk-menu]')) {
         setBulkImportRows((prev) =>
           prev.map((row) => ({
             ...row,
@@ -1204,8 +1237,8 @@ export default function App() {
 
       {/* Modal Container */}
       <div
-        className={`bg-white rounded-2xl shadow-xl w-full max-w-[744px] border border-gray-200 z-10 relative flex max-h-[960px] flex-col ${
-          isEmailComposerOpen ? 'min-h-[min(760px,85vh)] overflow-hidden' : 'overflow-visible'
+        className={`bg-white rounded-2xl shadow-xl w-full max-w-[744px] border border-gray-200 z-10 relative flex max-h-[960px] flex-col overflow-hidden ${
+          isEmailComposerOpen ? 'min-h-[min(760px,85vh)]' : ''
         }`}
       >
         {isEmailComposerOpen ? (
@@ -1401,27 +1434,28 @@ export default function App() {
                         <Zap className="w-4 h-4" />
                         Insert variable
                       </button>
-                      <AnimatePresence>
-                        {isVariableMenuOpen && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 6 }}
-                            className="absolute right-0 top-full z-[1500] mt-2 w-48 max-h-[240px] overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-xl"
+                      <PortalMenu
+                        open={isVariableMenuOpen}
+                        triggerRef={variableMenuRef}
+                        menuRef={variableMenuPortalRef}
+                        placement="bottom"
+                        align="end"
+                        width={192}
+                        offset={8}
+                        className="max-h-[240px] overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-xl"
+                        onRequestClose={() => setIsVariableMenuOpen(false)}
+                      >
+                        {(['Recipient', 'Username', 'Filename', 'File type', 'Access type'] as const).map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() => insertVariableChip(option)}
+                            className="block w-full px-3 py-2 text-left text-sm text-gray-800 hover:bg-gray-50"
                           >
-                            {(['Recipient', 'Username', 'Filename', 'File type', 'Access type'] as const).map((option) => (
-                              <button
-                                key={option}
-                                type="button"
-                                onClick={() => insertVariableChip(option)}
-                                className="block w-full px-3 py-2 text-left text-sm text-gray-800 hover:bg-gray-50"
-                              >
-                                {option}
-                              </button>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                            {option}
+                          </button>
+                        ))}
+                      </PortalMenu>
                     </div>
                     </div>
                   </div>
@@ -1585,7 +1619,12 @@ export default function App() {
               </div>
               
               <div className="absolute right-2 top-2 flex items-center gap-1" ref={moreMenuRef}>
-                <div className="relative group/bulk-tooltip">
+                <HoverTooltip
+                  placement="top"
+                  align="end"
+                  className="w-72 rounded-xl border border-gray-300 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 shadow-lg"
+                  content="Bulk add a list of employees using names, IDs, or email addresses"
+                >
                   <button
                     type="button"
                     onClick={(e) => {
@@ -1597,23 +1636,23 @@ export default function App() {
                   >
                     <FileUp className="w-5 h-5" />
                   </button>
-                  <div className="invisible absolute bottom-full right-0 z-[1500] mb-2 w-72 rounded-xl border border-gray-300 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/bulk-tooltip:visible group-hover/bulk-tooltip:opacity-100">
-                    Bulk add a list of employees using names, IDs, or email addresses
-                  </div>
-                </div>
+                </HoverTooltip>
               </div>
 
               {/* Input Dropdown */}
-              <AnimatePresence>
-                {isInputFocused && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 5 }}
-                    id="main-input-menu"
-                    className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-200 z-[1500] max-h-[240px] overflow-y-auto"
-                    onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
-                  >
+              <PortalMenu
+                open={isInputFocused}
+                triggerRef={inputRef}
+                menuRef={mainInputMenuRef}
+                id="main-input-menu"
+                placement="bottom"
+                align="start"
+                width="trigger"
+                offset={4}
+                className="max-h-[240px] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-2xl"
+                onRequestClose={() => setIsInputFocused(false)}
+              >
+                    <div onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}>
                     {viewMode === 'advanced2' && inputValue.trim() !== '' ? (
                       // Search results for Advanced 2 when typing
                       <>
@@ -1725,9 +1764,8 @@ export default function App() {
                         </button>
                       </>
                     )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    </div>
+              </PortalMenu>
             </div>
             <button 
               onClick={handleAddPeople}
@@ -1748,8 +1786,12 @@ export default function App() {
           <div className="sticky top-0 z-[1250] mb-0 flex items-center justify-between border-b border-gray-200 bg-white py-4">
             <h2 className="text-lg font-semibold text-gray-900">People with access</h2>
             <div className="flex items-center gap-4">
-              {/* Copy icon now shows in both modes or specifically requested for default */}
-              <div className="relative group/tooltip">
+              <HoverTooltip
+                placement="top"
+                align="center"
+                className="w-fit whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 shadow-lg"
+                content="Copy emails for all with access"
+              >
                 <button
                   type="button"
                   onClick={() => void handleCopyAllEmails()}
@@ -1758,11 +1800,13 @@ export default function App() {
                 >
                   <Copy className="w-5 h-5" />
                 </button>
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#F3F4F6] text-gray-900 text-xs font-medium rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all w-fit whitespace-nowrap shadow-lg border border-gray-200 z-[1500]">
-                  Copy emails for all with access
-                </div>
-              </div>
-              <div className="relative group/tooltip">
+              </HoverTooltip>
+              <HoverTooltip
+                placement="top"
+                align="center"
+                className="w-fit whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 shadow-lg"
+                content="Email all with access"
+              >
                 <button
                   type="button"
                   onClick={openEmailComposer}
@@ -1771,11 +1815,13 @@ export default function App() {
                 >
                   <Mail className="w-5 h-5" />
                 </button>
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#F3F4F6] text-gray-900 text-xs font-medium rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all w-fit whitespace-nowrap shadow-lg border border-gray-200 z-[1500]">
-                  Email all with access
-                </div>
-              </div>
-              <div className="relative group/tooltip">
+              </HoverTooltip>
+              <HoverTooltip
+                placement="top"
+                align="center"
+                className="w-fit whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 shadow-lg"
+                content="Preview all with access"
+              >
                 <button
                   type="button"
                   onClick={() => setPreviewDrawer({ mode: 'all' })}
@@ -1784,10 +1830,7 @@ export default function App() {
                 >
                   <Eye className="w-5 h-5" />
                 </button>
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#F3F4F6] text-gray-900 text-xs font-medium rounded-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all w-fit whitespace-nowrap shadow-lg border border-gray-200 z-[1500]">
-                  Preview all with access
-                </div>
-              </div>
+              </HoverTooltip>
             </div>
           </div>
 
@@ -1810,12 +1853,20 @@ export default function App() {
             {/* Table Row */}
             {people.map(person => (
               <div key={person.id} className={`grid ${gridCols} gap-x-10 px-3 py-4 items-center hover:bg-gray-50 transition-colors group/row relative`}>
-                <div className="flex min-w-0 w-full items-center">
+                <div
+                  className="flex min-w-0 w-full items-center"
+                  ref={editingRowId === person.id ? transferRowTriggerRef : undefined}
+                >
                   <div className="min-w-0 flex-1">
                     <TagsCell names={person.names} />
                   </div>
                   <div className="relative ml-2 flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover/row:opacity-100">
-                    <div className="relative group/row-edit">
+                    <HoverTooltip
+                      placement="top"
+                      align="center"
+                      className="whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 shadow-lg"
+                      content="Edit"
+                    >
                       <button
                         type="button"
                         onClick={() =>
@@ -1826,11 +1877,13 @@ export default function App() {
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <div className="invisible absolute bottom-full left-1/2 z-[1500] mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/row-edit:visible group-hover/row-edit:opacity-100">
-                        Edit
-                      </div>
-                    </div>
-                    <div className="relative group/row-preview">
+                    </HoverTooltip>
+                    <HoverTooltip
+                      placement="top"
+                      align="center"
+                      className="whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 shadow-lg"
+                      content="Preview"
+                    >
                       <button
                         type="button"
                         onClick={() => setPreviewDrawer({ mode: 'row', personId: person.id })}
@@ -1839,15 +1892,20 @@ export default function App() {
                       >
                         <Eye className="h-4 w-4" />
                       </button>
-                      <div className="invisible absolute bottom-full left-1/2 z-[1500] mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/row-preview:visible group-hover/row-preview:opacity-100">
-                        Preview
-                      </div>
-                    </div>
+                    </HoverTooltip>
                   </div>
                   {editingRowId === person.id && (
-                    <div
-                      ref={transferSearchRef}
-                      className="absolute left-4 top-full z-[1500] mt-2 w-[320px] rounded-xl border border-gray-200 bg-white p-3 shadow-2xl"
+                    <PortalMenu
+                      open
+                      triggerRef={transferRowTriggerRef}
+                      menuRef={transferSearchRef}
+                      placement="bottom"
+                      align="start"
+                      width={320}
+                      offset={8}
+                      nudgeX={16}
+                      className="rounded-xl border border-gray-200 bg-white p-3 shadow-2xl"
+                      onRequestClose={() => setEditingRowId(null)}
                     >
                       <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
                         Remove group/person from this row
@@ -1870,7 +1928,7 @@ export default function App() {
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </PortalMenu>
                   )}
                 </div>
                 
@@ -1904,7 +1962,7 @@ export default function App() {
                             e.preventDefault();
                             setActiveAccessDropdown(person.id);
                             requestAnimationFrame(() => {
-                              const menu = accessDropdownRef.current;
+                              const menu = accessDropdownMenuRef.current;
                               const firstItem = menu?.querySelector<HTMLElement>('button[data-menu-item="true"]');
                               firstItem?.focus();
                             });
@@ -1925,122 +1983,136 @@ export default function App() {
                       )}
 
                       {/* Access Dropdown — same options in every view mode */}
-                      <AnimatePresence>
-                        {activeAccessDropdown === person.id && person.role !== 'Owner' && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 10 }}
-                            className="absolute left-0 top-full z-[1500] mt-2 w-72 max-h-[240px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-2 pb-6 shadow-2xl"
-                            onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
-                          >
-                              <button 
-                                type="button"
-                                onClick={() => updateRole(person.id, 'Editor')}
-                                data-menu-item="true"
-                                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-sm font-medium text-gray-900">Editor</span>
-                                  {person.role === 'Editor' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
-                                </div>
-                              </button>
-                              <button 
-                                type="button"
-                                onClick={() => updateRole(person.id, 'Collaborator')}
-                                data-menu-item="true"
-                                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-sm font-medium text-gray-900">Collaborator</span>
-                                  {person.role === 'Collaborator' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
-                                </div>
-                              </button>
-                              <button 
-                                type="button"
-                                onClick={() => updateRole(person.id, 'View as owner')}
-                                data-menu-item="true"
-                                className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium flex items-center justify-between gap-2"
-                              >
-                                <span>View as owner</span>
-                                {person.role === 'View as owner' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
-                              </button>
-                              <button 
-                                type="button"
-                                onClick={() => updateRole(person.id, 'View as viewer')}
-                                data-menu-item="true"
-                                className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium flex items-center justify-between gap-2"
-                              >
-                                <span>View as viewer</span>
-                                {person.role === 'View as viewer' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
-                              </button>
-                              <button 
-                                type="button"
-                                onClick={() => updateRole(person.id, 'Explore as owner')}
-                                data-menu-item="true"
-                                className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium flex items-center justify-between gap-2"
-                              >
-                                <span>Explore as owner</span>
-                                {person.role === 'Explore as owner' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
-                              </button>
-                              <div className="border-t border-gray-100 my-2"></div>
-                              {person.role !== 'Owner' && !person.isGroup && (
-                                <button 
-                                  type="button"
-                                  onClick={() => {
-                                    setPendingTransferPersonId(person.id);
-                                    setActiveAccessDropdown(null);
-                                  }}
-                                  data-menu-item="true"
-                                  className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium"
-                                >
-                                  Transfer ownership
-                                </button>
-                              )}
-                              {person.role !== 'Owner' && (
+                      {activeAccessDropdown === person.id && person.role !== 'Owner' && (
+                        <PortalMenu
+                          open
+                          triggerRef={accessDropdownRef}
+                          menuRef={accessDropdownMenuRef}
+                          placement="bottom"
+                          align="start"
+                          width={288}
+                          offset={8}
+                          className="max-h-[240px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-2 pb-6 shadow-2xl"
+                          onRequestClose={() => setActiveAccessDropdown(null)}
+                        >
+                          <div onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}>
+                            <button 
+                              type="button"
+                              onClick={() => updateRole(person.id, 'Editor')}
+                              data-menu-item="true"
+                              className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-sm font-medium text-gray-900">Editor</span>
+                                {person.role === 'Editor' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
+                              </div>
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => updateRole(person.id, 'Collaborator')}
+                              data-menu-item="true"
+                              className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-sm font-medium text-gray-900">Collaborator</span>
+                                {person.role === 'Collaborator' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
+                              </div>
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => updateRole(person.id, 'View as owner')}
+                              data-menu-item="true"
+                              className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium flex items-center justify-between gap-2"
+                            >
+                              <span>View as owner</span>
+                              {person.role === 'View as owner' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => updateRole(person.id, 'View as viewer')}
+                              data-menu-item="true"
+                              className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium flex items-center justify-between gap-2"
+                            >
+                              <span>View as viewer</span>
+                              {person.role === 'View as viewer' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => updateRole(person.id, 'Explore as owner')}
+                              data-menu-item="true"
+                              className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium flex items-center justify-between gap-2"
+                            >
+                              <span>Explore as owner</span>
+                              {person.role === 'Explore as owner' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
+                            </button>
+                            <div className="border-t border-gray-100 my-2"></div>
+                            {person.role !== 'Owner' && !person.isGroup && (
                               <button 
                                 type="button"
                                 onClick={() => {
-                                  if (person.expirationDate) {
-                                    setPersonExpiration(person.id, null);
-                                  } else {
-                                    setPersonExpiration(person.id, toIsoDate(addMonths(new Date(), 1)));
-                                  }
+                                  setPendingTransferPersonId(person.id);
                                   setActiveAccessDropdown(null);
                                 }}
                                 data-menu-item="true"
-                                className="group w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium"
+                                className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium"
                               >
-                                <span className="inline-flex items-center gap-1.5">
-                                  {person.expirationDate ? 'Remove expiration' : 'Add expiration'}
-                                  <span className="relative inline-flex items-center group/exp-help">
-                                    <HelpCircle className="h-3.5 w-3.5 text-gray-400" />
-                                    <span className="pointer-events-none invisible absolute left-0 top-full z-[1500] mt-2 h-auto w-[340px] whitespace-normal break-words rounded-lg border border-gray-200 bg-white p-2 text-xs leading-relaxed text-gray-700 opacity-0 shadow-xl transition-all group-hover/exp-help:visible group-hover/exp-help:opacity-100">
-                                      Once access expires, this group will no longer be able to access the document. If the artifact is currently set to "Company-wide" or "Anyone with the link," it will automatically switch to "Restricted" after expiration.
-                                    </span>
-                                  </span>
-                                </span>
+                                Transfer ownership
                               </button>
-                              )}
-                              {person.role !== 'Owner' && (
-                                <>
-                                  <div className="border-t border-gray-100 my-2"></div>
-                                  <button 
-                                    type="button"
-                                    onClick={() => {
-                                      removePerson(person.id);
-                                      setActiveAccessDropdown(null);
-                                    }}
-                                    data-menu-item="true"
-                                    className="w-full px-4 py-3 text-left hover:bg-red-50 text-sm text-red-600 font-medium transition-colors"
+                            )}
+                            {person.role !== 'Owner' && (
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                if (person.expirationDate) {
+                                  setPersonExpiration(person.id, null);
+                                } else {
+                                  setPersonExpiration(person.id, toIsoDate(addMonths(new Date(), 1)));
+                                }
+                                setActiveAccessDropdown(null);
+                              }}
+                              data-menu-item="true"
+                              className="w-full px-4 py-3 text-left hover:bg-gray-50 text-sm text-gray-900 font-medium"
+                            >
+                              <span className="inline-flex items-center gap-1.5">
+                                {person.expirationDate ? 'Remove expiration' : 'Add expiration'}
+                                <HoverTooltip
+                                  placement="bottom"
+                                  align="start"
+                                  delay={0}
+                                  wrapperClassName="inline-flex"
+                                  className="h-auto w-[340px] whitespace-normal break-words rounded-lg border border-gray-200 bg-white p-2 text-xs leading-relaxed text-gray-700 shadow-xl"
+                                  content='Once access expires, this group will no longer be able to access the document. If the artifact is currently set to "Company-wide" or "Anyone with the link," it will automatically switch to "Restricted" after expiration.'
+                                >
+                                  <span
+                                    className="inline-flex items-center"
+                                    onClick={(e) => e.stopPropagation()}
+                                    onMouseDown={(e) => e.stopPropagation()}
                                   >
-                                    Remove
-                                  </button>
-                                </>
-                              )}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                                    <HelpCircle className="h-3.5 w-3.5 text-gray-400" />
+                                  </span>
+                                </HoverTooltip>
+                              </span>
+                            </button>
+                            )}
+                            {person.role !== 'Owner' && (
+                              <>
+                                <div className="border-t border-gray-100 my-2"></div>
+                                <button 
+                                  type="button"
+                                  onClick={() => {
+                                    removePerson(person.id);
+                                    setActiveAccessDropdown(null);
+                                  }}
+                                  data-menu-item="true"
+                                  className="w-full px-4 py-3 text-left hover:bg-red-50 text-sm text-red-600 font-medium transition-colors"
+                                >
+                                  Remove
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </PortalMenu>
+                      )}
                     </div>
 
                     {person.expirationDate && (
@@ -2049,6 +2121,7 @@ export default function App() {
                           <span className="text-gray-500">Expires</span>
                           <button
                             type="button"
+                            ref={calendarOpenPersonId === person.id ? expirationDateTriggerRef : undefined}
                             title={person.expirationDate}
                             onClick={() =>
                               setCalendarOpenPersonId((cur) =>
@@ -2060,7 +2133,12 @@ export default function App() {
                             {formatExpirationDisplay(person.expirationDate)}
                           </button>
                         </div>
-                        <div className="relative group/remove-expiry">
+                        <HoverTooltip
+                          placement="top"
+                          align="center"
+                          className="whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 shadow-lg"
+                          content="Remove"
+                        >
                           <button
                             type="button"
                             onClick={() => {
@@ -2072,38 +2150,43 @@ export default function App() {
                           >
                             <X className="h-4 w-4" />
                           </button>
-                          <div className="invisible absolute bottom-full left-1/2 z-[1500] mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/remove-expiry:visible group-hover/remove-expiry:opacity-100">
-                            Remove
-                          </div>
-                        </div>
+                        </HoverTooltip>
                         {calendarOpenPersonId === person.id && (
-                          <div
-                            ref={expirationCalendarPopoverRef}
-                            className="absolute left-0 top-full z-[1500] mt-2"
+                          <PortalMenu
+                            open
+                            triggerRef={expirationDateTriggerRef}
+                            menuRef={expirationCalendarPopoverRef}
+                            placement="bottom"
+                            align="start"
+                            width={288}
+                            offset={8}
+                            onRequestClose={() => setCalendarOpenPersonId(null)}
                           >
                             <ExpirationCalendarPopover
                               valueIso={person.expirationDate}
                               onSelect={(iso) => setPersonExpiration(person.id, iso)}
                               onClose={() => setCalendarOpenPersonId(null)}
                             />
-                          </div>
+                          </PortalMenu>
                         )}
                       </div>
                     )}
                   </div>
                 <div className="flex items-center justify-center w-8 shrink-0 self-start pt-1">
                     {person.role !== 'Owner' && viewMode !== 'advanced2' && (
-                      <div className="relative group/delete-tooltip">
+                      <HoverTooltip
+                        placement="top"
+                        align="end"
+                        className="mb-0 w-fit whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 shadow-lg"
+                        content="Remove access"
+                      >
                         <button 
                           onClick={() => removePerson(person.id)}
                           className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
-                        <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-[#F3F4F6] text-gray-900 text-xs font-medium rounded-xl opacity-0 invisible group-hover/delete-tooltip:opacity-100 group-hover/delete-tooltip:visible transition-all w-fit whitespace-nowrap shadow-lg border border-gray-200 z-[1500]">
-                          Remove access
-                        </div>
-                      </div>
+                      </HoverTooltip>
                     )}
                   </div>
                 </div>
@@ -2141,7 +2224,7 @@ export default function App() {
                   )}
                 </div>
                 <div className="flex-1 flex items-start gap-4 min-w-0">
-                  <div className="flex-1 min-w-0 relative">
+                  <div className="flex-1 min-w-0 relative" ref={generalScopeTriggerRef}>
                     <button
                       type="button"
                       onClick={() => {
@@ -2153,7 +2236,7 @@ export default function App() {
                           e.preventDefault();
                           setGeneralScopeDropdownOpen(true);
                           requestAnimationFrame(() => {
-                            const menu = generalScopeDropdownRef.current;
+                            const menu = generalScopeMenuRef.current;
                             const firstItem = menu?.querySelector<HTMLElement>('button[data-menu-item="true"]');
                             firstItem?.focus();
                           });
@@ -2183,6 +2266,7 @@ export default function App() {
                               <span>Expires</span>
                               <button
                                 type="button"
+                                ref={generalLinkExpirationTriggerRef}
                                 title={generalLinkExpirationIso}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -2192,7 +2276,12 @@ export default function App() {
                               >
                                 {formatExpirationDisplay(generalLinkExpirationIso)}
                               </button>
-                              <div className="relative group/general-exp-remove">
+                              <HoverTooltip
+                                placement="top"
+                                align="center"
+                                className="whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 shadow-lg"
+                                content="Remove"
+                              >
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -2205,14 +2294,17 @@ export default function App() {
                                 >
                                   <X className="h-4 w-4" />
                                 </button>
-                                <div className="invisible absolute bottom-full left-1/2 z-[1500] mb-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-gray-200 bg-[#F3F4F6] px-3 py-2 text-xs font-medium text-gray-900 opacity-0 shadow-lg transition-all group-hover/general-exp-remove:visible group-hover/general-exp-remove:opacity-100">
-                                  Remove
-                                </div>
-                              </div>
-                              {calendarGeneralLinkOpen && (
-                                <div
-                                  ref={generalExpirationCalendarPopoverRef}
-                                  className="absolute left-0 top-full z-[1500] mt-2"
+                              </HoverTooltip>
+                              {calendarGeneralLinkOpen && generalLinkExpirationIso && (
+                                <PortalMenu
+                                  open
+                                  triggerRef={generalLinkExpirationTriggerRef}
+                                  menuRef={generalExpirationCalendarPopoverRef}
+                                  placement="bottom"
+                                  align="start"
+                                  width={288}
+                                  offset={8}
+                                  onRequestClose={() => setCalendarGeneralLinkOpen(false)}
                                 >
                                   <ExpirationCalendarPopover
                                     valueIso={generalLinkExpirationIso}
@@ -2222,7 +2314,7 @@ export default function App() {
                                     }}
                                     onClose={() => setCalendarGeneralLinkOpen(false)}
                                   />
-                                </div>
+                                </PortalMenu>
                               )}
                             </div>
                           )}
@@ -2230,49 +2322,51 @@ export default function App() {
                       </div>
                     </button>
 
-                    <AnimatePresence>
-                      {generalScopeDropdownOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 4 }}
-                          className="absolute left-0 top-full mt-1.5 z-[1500] w-[240px] max-h-[240px] overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-2xl py-1"
-                          onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
-                        >
-                          {(
-                            [
-                              { key: 'restricted' as const, listLabel: 'Restricted' },
-                              { key: 'company' as const, listLabel: organizationDisplayName },
-                              { key: 'anyone_link' as const, listLabel: 'Anyone with the link' },
-                            ] as const
-                          ).map((opt) => (
-                            <button
-                              key={opt.key}
-                              type="button"
-                              data-menu-item="true"
-                              onClick={() => {
-                                setGeneralAccessScope(opt.key);
-                                if (opt.key === 'restricted') {
-                                  setGeneralLinkExpirationIso(null);
-                                  setGeneralLinkAccessRole('View as viewer');
-                                }
-                                setGeneralScopeDropdownOpen(false);
-                              }}
-                              className="w-full px-4 py-2.5 flex items-start justify-between gap-3 text-left hover:bg-[#EDEBE7]"
-                            >
-                              <span className="text-[14px] text-gray-900">{opt.listLabel}</span>
-                              <span className="mt-0.5 w-5 shrink-0 flex justify-center">
-                                {generalAccessScope === opt.key ? (
-                                  <Check className="w-5 h-5 text-[#1a73e8]" strokeWidth={2.5} />
-                                ) : (
-                                  <span className="w-5 h-5 block" />
-                                )}
-                              </span>
-                            </button>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    <PortalMenu
+                      open={generalScopeDropdownOpen}
+                      triggerRef={generalScopeTriggerRef}
+                      menuRef={generalScopeMenuRef}
+                      placement="bottom"
+                      align="start"
+                      width={240}
+                      offset={6}
+                      className="max-h-[240px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-2xl"
+                      onRequestClose={() => setGeneralScopeDropdownOpen(false)}
+                    >
+                      <div onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}>
+                        {(
+                          [
+                            { key: 'restricted' as const, listLabel: 'Restricted' },
+                            { key: 'company' as const, listLabel: organizationDisplayName },
+                            { key: 'anyone_link' as const, listLabel: 'Anyone with the link' },
+                          ] as const
+                        ).map((opt) => (
+                          <button
+                            key={opt.key}
+                            type="button"
+                            data-menu-item="true"
+                            onClick={() => {
+                              setGeneralAccessScope(opt.key);
+                              if (opt.key === 'restricted') {
+                                setGeneralLinkExpirationIso(null);
+                                setGeneralLinkAccessRole('View as viewer');
+                              }
+                              setGeneralScopeDropdownOpen(false);
+                            }}
+                            className="flex w-full items-start justify-between gap-3 px-4 py-2.5 text-left hover:bg-[#EDEBE7]"
+                          >
+                            <span className="text-[14px] text-gray-900">{opt.listLabel}</span>
+                            <span className="mt-0.5 flex w-5 shrink-0 justify-center">
+                              {generalAccessScope === opt.key ? (
+                                <Check className="w-5 h-5 text-[#1a73e8]" strokeWidth={2.5} />
+                              ) : (
+                                <span className="block h-5 w-5" />
+                              )}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </PortalMenu>
                   </div>
 
                   {(generalAccessScope === 'company' || generalAccessScope === 'anyone_link') && (
@@ -2312,120 +2406,130 @@ export default function App() {
                         <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
                       </button>
 
-                      <AnimatePresence>
-                        {generalRoleDropdownOpen && (
-                          <motion.div
-                            ref={generalRoleMenuListRef}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 10 }}
-                            className="absolute right-0 top-full z-[1500] mt-2 w-72 max-h-[240px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 pb-6 shadow-2xl"
-                            onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
+                      <PortalMenu
+                        open={generalRoleDropdownOpen}
+                        triggerRef={generalRoleDropdownRef}
+                        menuRef={generalRoleMenuListRef}
+                        placement="bottom"
+                        align="end"
+                        width={288}
+                        offset={8}
+                        className="max-h-[240px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 pb-6 shadow-2xl"
+                        onRequestClose={() => setGeneralRoleDropdownOpen(false)}
+                      >
+                        <div onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}>
+                          <button
+                            type="button"
+                            data-menu-item="true"
+                            onClick={() => {
+                              setGeneralLinkAccessRole('Editor');
+                              setGeneralRoleDropdownOpen(false);
+                            }}
+                            className="group w-full px-4 py-3 text-left transition-colors hover:bg-gray-50"
                           >
-                              <button
-                                type="button"
-                                data-menu-item="true"
-                                onClick={() => {
-                                  setGeneralLinkAccessRole('Editor');
-                                  setGeneralRoleDropdownOpen(false);
-                                }}
-                                className="group w-full px-4 py-3 text-left transition-colors hover:bg-gray-50"
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-sm font-medium text-gray-900">Editor</span>
-                                  {generalLinkAccessRole === 'Editor' && (
-                                    <CheckCircle2 className="h-4 w-4 shrink-0 text-[#7A005D]" />
-                                  )}
-                                </div>
-                              </button>
-                              <button
-                                type="button"
-                                data-menu-item="true"
-                                onClick={() => {
-                                  setGeneralLinkAccessRole('Collaborator');
-                                  setGeneralRoleDropdownOpen(false);
-                                }}
-                                className="group w-full px-4 py-3 text-left transition-colors hover:bg-gray-50"
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-sm font-medium text-gray-900">Collaborator</span>
-                                  {generalLinkAccessRole === 'Collaborator' && (
-                                    <CheckCircle2 className="h-4 w-4 shrink-0 text-[#7A005D]" />
-                                  )}
-                                </div>
-                              </button>
-                              <button
-                                type="button"
-                                data-menu-item="true"
-                                onClick={() => {
-                                  setGeneralLinkAccessRole('View as owner');
-                                  setGeneralRoleDropdownOpen(false);
-                                }}
-                                className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50"
-                              >
-                                <span>View as owner</span>
-                                {generalLinkAccessRole === 'View as owner' && (
-                                  <CheckCircle2 className="h-4 w-4 shrink-0 text-[#7A005D]" />
-                                )}
-                              </button>
-                              <button
-                                type="button"
-                                data-menu-item="true"
-                                onClick={() => {
-                                  setGeneralLinkAccessRole('View as viewer');
-                                  setGeneralRoleDropdownOpen(false);
-                                }}
-                                className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50"
-                              >
-                                <span>View as viewer</span>
-                                {generalLinkAccessRole === 'View as viewer' && (
-                                  <CheckCircle2 className="h-4 w-4 shrink-0 text-[#7A005D]" />
-                                )}
-                              </button>
-                              <button
-                                type="button"
-                                data-menu-item="true"
-                                onClick={() => {
-                                  setGeneralLinkAccessRole('Explore as owner');
-                                  setGeneralRoleDropdownOpen(false);
-                                }}
-                                className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50"
-                              >
-                                <span>Explore as owner</span>
-                                {generalLinkAccessRole === 'Explore as owner' && (
-                                  <CheckCircle2 className="h-4 w-4 shrink-0 text-[#7A005D]" />
-                                )}
-                              </button>
-                              <div className="my-1 border-t border-gray-100" />
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-medium text-gray-900">Editor</span>
+                              {generalLinkAccessRole === 'Editor' && (
+                                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#7A005D]" />
+                              )}
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            data-menu-item="true"
+                            onClick={() => {
+                              setGeneralLinkAccessRole('Collaborator');
+                              setGeneralRoleDropdownOpen(false);
+                            }}
+                            className="group w-full px-4 py-3 text-left transition-colors hover:bg-gray-50"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-medium text-gray-900">Collaborator</span>
+                              {generalLinkAccessRole === 'Collaborator' && (
+                                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#7A005D]" />
+                              )}
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            data-menu-item="true"
+                            onClick={() => {
+                              setGeneralLinkAccessRole('View as owner');
+                              setGeneralRoleDropdownOpen(false);
+                            }}
+                            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50"
+                          >
+                            <span>View as owner</span>
+                            {generalLinkAccessRole === 'View as owner' && (
+                              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#7A005D]" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            data-menu-item="true"
+                            onClick={() => {
+                              setGeneralLinkAccessRole('View as viewer');
+                              setGeneralRoleDropdownOpen(false);
+                            }}
+                            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50"
+                          >
+                            <span>View as viewer</span>
+                            {generalLinkAccessRole === 'View as viewer' && (
+                              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#7A005D]" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            data-menu-item="true"
+                            onClick={() => {
+                              setGeneralLinkAccessRole('Explore as owner');
+                              setGeneralRoleDropdownOpen(false);
+                            }}
+                            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50"
+                          >
+                            <span>Explore as owner</span>
+                            {generalLinkAccessRole === 'Explore as owner' && (
+                              <CheckCircle2 className="h-4 w-4 shrink-0 text-[#7A005D]" />
+                            )}
+                          </button>
+                          <div className="my-1 border-t border-gray-100" />
 
-                              <button
-                                type="button"
-                                data-menu-item="true"
-                                onClick={() => {
-                                  if (generalLinkExpirationIso) {
-                                    setGeneralLinkExpirationIso(null);
-                                    setCalendarGeneralLinkOpen(false);
-                                  } else {
-                                    setGeneralLinkExpirationIso(toIsoDate(addMonths(new Date(), 1)));
-                                  }
-                                  setGeneralRoleDropdownOpen(false);
-                                }}
-                                className="group w-full px-4 py-3 text-left text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50"
+                          <button
+                            type="button"
+                            data-menu-item="true"
+                            onClick={() => {
+                              if (generalLinkExpirationIso) {
+                                setGeneralLinkExpirationIso(null);
+                                setCalendarGeneralLinkOpen(false);
+                              } else {
+                                setGeneralLinkExpirationIso(toIsoDate(addMonths(new Date(), 1)));
+                              }
+                              setGeneralRoleDropdownOpen(false);
+                            }}
+                            className="w-full px-4 py-3 text-left text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50"
+                          >
+                            <span className="inline-flex items-center gap-1.5">
+                              {generalLinkExpirationIso ? 'Remove expiration' : 'Add expiration'}
+                              <HoverTooltip
+                                placement="bottom"
+                                align="start"
+                                delay={0}
+                                wrapperClassName="inline-flex"
+                                className="h-auto w-[340px] whitespace-normal break-words rounded-lg border border-gray-200 bg-white p-2 text-xs leading-relaxed text-gray-700 shadow-xl"
+                                content='Once access expires, this group will no longer be able to access the document. If the artifact is currently set to "Company-wide" or "Anyone with the link," it will automatically switch to "Restricted" after expiration.'
                               >
-                                <span className="inline-flex items-center gap-1.5">
-                                  {generalLinkExpirationIso ? 'Remove expiration' : 'Add expiration'}
-                                  <span className="relative inline-flex items-center group/general-exp-help">
-                                    <HelpCircle className="h-3.5 w-3.5 text-gray-400" />
-                                    <span className="pointer-events-none invisible absolute left-0 top-full z-[1500] mt-2 h-auto w-[340px] whitespace-normal break-words rounded-lg border border-gray-200 bg-white p-2 text-xs leading-relaxed text-gray-700 opacity-0 shadow-xl transition-all group-hover/general-exp-help:visible group-hover/general-exp-help:opacity-100">
-                                      Once access expires, this group will no longer be able to access the document. If the artifact is currently set to "Company-wide" or "Anyone with the link," it will automatically switch to "Restricted" after expiration.
-                                    </span>
-                                  </span>
+                                <span
+                                  className="inline-flex items-center"
+                                  onClick={(e) => e.stopPropagation()}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                >
+                                  <HelpCircle className="h-3.5 w-3.5 text-gray-400" />
                                 </span>
-                              </button>
-
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                              </HoverTooltip>
+                            </span>
+                          </button>
+                        </div>
+                      </PortalMenu>
 
                     </div>
                   )}
@@ -2582,7 +2686,14 @@ export default function App() {
                                   />
                                 </td>
                                 <td className="min-w-[200px] max-w-none px-4 py-3 align-top">
-                                  <div className="relative w-full max-w-[min(100%,28rem)]" data-people-selector="true">
+                                  <div
+                                    className="relative w-full max-w-[min(100%,28rem)]"
+                                    data-people-selector="true"
+                                    ref={(el) => {
+                                      if (el) bulkPeopleWrapRefs.current[row.id] = el;
+                                      else delete bulkPeopleWrapRefs.current[row.id];
+                                    }}
+                                  >
                                     <div className="relative">
                                       <input
                                         value={row.query || matched?.fullName || ''}
@@ -2627,64 +2738,80 @@ export default function App() {
                                       />
                                       <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
                                     </div>
-                                    <AnimatePresence>
-                                      {row.dropdownOpen && (
-                                        <motion.div
-                                          key={`bulk-dd-${row.id}`}
-                                          initial={{ opacity: 0, y: 6 }}
-                                          animate={{ opacity: 1, y: 0 }}
-                                          exit={{ opacity: 0, y: 6 }}
-                                          data-bulk-menu={row.id}
-                                          className="absolute left-0 top-full z-[1500] mt-2 w-full max-h-[220px] overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-xl"
-                                          onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
-                                        >
-                                          {row.query.trim() === '' && (
-                                            <button
-                                              type="button"
-                                              data-menu-item="true"
-                                              onClick={() =>
-                                                setBulkImportRows((prev) =>
-                                                  prev.map((item) =>
-                                                    item.id === row.id
-                                                      ? { ...item, matchedPersonId: null, dropdownOpen: false, query: '' }
-                                                      : item
-                                                  )
+                                    <PortalMenu
+                                      open={row.dropdownOpen}
+                                      getTriggerElement={() => bulkPeopleWrapRefs.current[row.id] ?? null}
+                                      placement="bottom"
+                                      align="start"
+                                      width="trigger"
+                                      offset={8}
+                                      data-bulk-menu={row.id}
+                                      className="max-h-[220px] overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-xl"
+                                      onRequestClose={() =>
+                                        setBulkImportRows((prev) =>
+                                          prev.map((item) =>
+                                            item.id === row.id
+                                              ? {
+                                                  ...item,
+                                                  dropdownOpen: false,
+                                                  query: item.matchedPersonId ? item.query : '',
+                                                }
+                                              : item
+                                          )
+                                        )
+                                      }
+                                    >
+                                      <div onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}>
+                                        {row.query.trim() === '' && (
+                                          <button
+                                            type="button"
+                                            data-menu-item="true"
+                                            onClick={() =>
+                                              setBulkImportRows((prev) =>
+                                                prev.map((item) =>
+                                                  item.id === row.id
+                                                    ? { ...item, matchedPersonId: null, dropdownOpen: false, query: '' }
+                                                    : item
                                                 )
-                                              }
-                                              className="mb-2 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none"
-                                            >
-                                              <span>Send to external user</span>
-                                              {!matched && <Check className="h-4 w-4 text-[#7A005D]" />}
-                                            </button>
-                                          )}
-                                          {filteredPeople.map((personOption) => (
-                                            <button
-                                              key={personOption.id}
-                                              type="button"
-                                              data-menu-item="true"
-                                              onClick={() => selectBulkMatchedPerson(row.id, personOption)}
-                                              className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none"
-                                            >
-                                              <span className="inline-flex items-center gap-2">
-                                                <img src={personOption.avatar} alt="" className="h-6 w-6 rounded-full object-cover" referrerPolicy="no-referrer" />
-                                                <span>{personOption.fullName}</span>
-                                              </span>
-                                              {matched?.id === personOption.id && <Check className="h-4 w-4 text-[#7A005D]" />}
-                                            </button>
-                                          ))}
-                                        </motion.div>
-                                      )}
-                                    </AnimatePresence>
+                                              )
+                                            }
+                                            className="mb-2 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none"
+                                          >
+                                            <span>Send to external user</span>
+                                            {!matched && <Check className="h-4 w-4 text-[#7A005D]" />}
+                                          </button>
+                                        )}
+                                        {filteredPeople.map((personOption) => (
+                                          <button
+                                            key={personOption.id}
+                                            type="button"
+                                            data-menu-item="true"
+                                            onClick={() => selectBulkMatchedPerson(row.id, personOption)}
+                                            className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none"
+                                          >
+                                            <span className="inline-flex items-center gap-2">
+                                              <img src={personOption.avatar} alt="" className="h-6 w-6 rounded-full object-cover" referrerPolicy="no-referrer" />
+                                              <span>{personOption.fullName}</span>
+                                            </span>
+                                            {matched?.id === personOption.id && <Check className="h-4 w-4 text-[#7A005D]" />}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </PortalMenu>
                                   </div>
                                 </td>
                                 <td className="whitespace-nowrap pl-4 pr-4 py-3 align-middle text-right">
                                   <div className="inline-flex w-full items-center justify-end gap-2">
                                   {duplicateMatched && (
-                                    <div className="relative group/dup-warning" data-bulk-warning="true">
-                                      <AlertCircle className="h-4 w-4 text-amber-500" aria-hidden />
-                                      <div className="invisible absolute bottom-full right-0 z-[1500] mb-2 h-auto w-64 whitespace-normal break-words rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-xs leading-relaxed text-gray-700 opacity-0 shadow-lg transition-all group-hover/dup-warning:visible group-hover/dup-warning:opacity-100">
-                                        This person has been matched with a different address in the table.
-                                      </div>
+                                    <div data-bulk-warning="true">
+                                      <HoverTooltip
+                                        placement="top"
+                                        align="end"
+                                        className="h-auto w-64 whitespace-normal break-words rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-xs leading-relaxed text-gray-700 shadow-lg"
+                                        content="This person has been matched with a different address in the table."
+                                      >
+                                        <AlertCircle className="h-4 w-4 text-amber-500" aria-hidden />
+                                      </HoverTooltip>
                                     </div>
                                   )}
                                   {!duplicateMatched && <span className="h-4 w-4" aria-hidden />}

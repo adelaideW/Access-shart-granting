@@ -89,7 +89,7 @@ describe('Snackbar integration (App)', () => {
     await user.click(within(dialog).getByRole('button', {name: 'Import'}));
 
     await user.click(within(dialog).getByDisplayValue('Avery Lee'));
-    await user.click(within(dialog).getByRole('button', {name: /^Harry Porter$/}));
+    await user.click(screen.getByRole('button', {name: /^Harry Porter$/}));
 
     expect(await screen.findByText(/already matched with another address/i)).toBeInTheDocument();
     assertNoErrorBoundary();
