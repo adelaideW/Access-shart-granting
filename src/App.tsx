@@ -879,13 +879,38 @@ export default function App() {
 
   useEffect(() => {
     if (people.length > previousPeopleCountRef.current) {
-      const el = peopleRowsScrollRef.current;
-      if (el) {
-        el.scrollTop = el.scrollHeight;
+      const anyOverlayOpen =
+        activeAccessDropdown != null ||
+        editingRowId != null ||
+        generalScopeDropdownOpen ||
+        generalRoleDropdownOpen ||
+        calendarOpenPersonId != null ||
+        calendarGeneralLinkOpen ||
+        isVariableMenuOpen ||
+        isInputFocused ||
+        isBulkAddOpen ||
+        bulkImportRows.some((r) => r.dropdownOpen);
+      if (!anyOverlayOpen) {
+        const el = peopleRowsScrollRef.current;
+        if (el) {
+          el.scrollTop = el.scrollHeight;
+        }
       }
     }
     previousPeopleCountRef.current = people.length;
-  }, [people.length]);
+  }, [
+    people.length,
+    activeAccessDropdown,
+    editingRowId,
+    generalScopeDropdownOpen,
+    generalRoleDropdownOpen,
+    calendarOpenPersonId,
+    calendarGeneralLinkOpen,
+    isVariableMenuOpen,
+    isInputFocused,
+    isBulkAddOpen,
+    bulkImportRows,
+  ]);
 
   useEffect(() => {
     if (isEmailComposerOpen) setCollapsedRecipientBuckets(new Set());
@@ -1467,70 +1492,58 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="h-[160px] min-h-[160px] resize-y overflow-auto p-4 text-sm text-gray-800">
-                    {emailComposerTab === 'preview' ? (
-                      <div className="rounded-2xl border border-gray-200 bg-[#F8FAFC] p-6">
-                        <div className="text-[12px] font-semibold uppercase tracking-wide text-[#6B7280]">Subject</div>
-                        <div className="mt-2 text-[20px] font-semibold text-[#111827]">{emailSubject || defaultEmailSubject()}</div>
-                        <div className="my-4 h-px bg-gray-200" />
-                        <div className="text-[12px] font-semibold uppercase tracking-wide text-[#6B7280]">Body</div>
-                        <div className="mt-3 text-[16px] leading-relaxed text-[#111827]">
-                          <div dangerouslySetInnerHTML={{ __html: emailBodyHtml || `${defaultEmailBody()}<br/>• {Document names}` }} />
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        ref={bodyEditorRef}
-                        contentEditable
-                        suppressContentEditableWarning
-                        className="h-full min-h-full w-full outline-none leading-relaxed"
-                        onInput={() => refreshBodyWordState()}
-                        onBlur={() => refreshBodyWordState()}
-                        onClick={(e) => {
-                          const target = e.target as HTMLElement;
-                          if (target.dataset.removeChip === 'true') {
-                            e.preventDefault();
-                            target.closest('[data-chip]')?.remove();
-                            refreshBodyWordState();
-                          }
-                        }}
-                        onDragStart={(e) => {
-                          const target = (e.target as HTMLElement).closest('[data-chip]') as HTMLElement | null;
-                          if (!target) return;
-                          draggedChipRef.current = target;
-                          e.dataTransfer.setData('text/plain', target.dataset.chip ?? '');
-                        }}
-                        onDrop={(e) => {
+                  <div className="min-h-[160px] flex-1 resize-y overflow-auto p-4 text-sm text-gray-800">
+                    <div
+                      ref={bodyEditorRef}
+                      contentEditable
+                      suppressContentEditableWarning
+                      className="h-full min-h-full w-full outline-none leading-relaxed"
+                      onInput={() => refreshBodyWordState()}
+                      onBlur={() => refreshBodyWordState()}
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement;
+                        if (target.dataset.removeChip === 'true') {
                           e.preventDefault();
-                          const editor = bodyEditorRef.current;
-                          if (!editor) return;
-                          const doc = editor.ownerDocument;
-                          const range =
-                            (doc as any).caretRangeFromPoint?.(e.clientX, e.clientY) ??
-                            (() => {
-                              const pos = (doc as any).caretPositionFromPoint?.(e.clientX, e.clientY);
-                              if (!pos) return null;
-                              const r = doc.createRange();
-                              r.setStart(pos.offsetNode, pos.offset);
-                              r.collapse(true);
-                              return r;
-                            })();
-                          if (!range) return;
-                          const chip = draggedChipRef.current;
-                          if (chip) {
-                            range.insertNode(chip);
-                            range.setStartAfter(chip);
-                            range.collapse(true);
-                            const sel = window.getSelection();
-                            sel?.removeAllRanges();
-                            sel?.addRange(range);
-                          }
-                          draggedChipRef.current = null;
+                          target.closest('[data-chip]')?.remove();
                           refreshBodyWordState();
-                        }}
-                        onDragOver={(e) => e.preventDefault()}
-                      />
-                    )}
+                        }
+                      }}
+                      onDragStart={(e) => {
+                        const target = (e.target as HTMLElement).closest('[data-chip]') as HTMLElement | null;
+                        if (!target) return;
+                        draggedChipRef.current = target;
+                        e.dataTransfer.setData('text/plain', target.dataset.chip ?? '');
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const editor = bodyEditorRef.current;
+                        if (!editor) return;
+                        const doc = editor.ownerDocument;
+                        const range =
+                          (doc as any).caretRangeFromPoint?.(e.clientX, e.clientY) ??
+                          (() => {
+                            const pos = (doc as any).caretPositionFromPoint?.(e.clientX, e.clientY);
+                            if (!pos) return null;
+                            const r = doc.createRange();
+                            r.setStart(pos.offsetNode, pos.offset);
+                            r.collapse(true);
+                            return r;
+                          })();
+                        if (!range) return;
+                        const chip = draggedChipRef.current;
+                        if (chip) {
+                          range.insertNode(chip);
+                          range.setStartAfter(chip);
+                          range.collapse(true);
+                          const sel = window.getSelection();
+                          sel?.removeAllRanges();
+                          sel?.addRange(range);
+                        }
+                        draggedChipRef.current = null;
+                        refreshBodyWordState();
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                    ></div>
                   </div>
                 </div>
                     </div>
@@ -1542,7 +1555,7 @@ export default function App() {
                       <div className="mt-2 text-[20px] font-semibold text-[#111827]">{emailSubject || defaultEmailSubject()}</div>
                       <div className="my-4 h-px bg-gray-200" />
                       <div className="text-[12px] font-semibold uppercase tracking-wide text-[#6B7280]">Body</div>
-                      <div className="mt-3 h-[160px] min-h-[160px] resize-y overflow-auto text-[16px] leading-relaxed text-[#111827]">
+                      <div className="mt-3 min-h-[160px] flex-1 resize-y overflow-auto text-[16px] leading-relaxed text-[#111827]">
                         <div dangerouslySetInnerHTML={{ __html: emailBodyHtml || `${defaultEmailBody()}<br/>• {Document names}` }} />
                       </div>
                     </div>

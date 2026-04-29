@@ -133,19 +133,24 @@ export function PortalMenu({
 
   useEffect(() => {
     if (!open) return;
-    const close = () => onRequestClose?.();
-    window.addEventListener('scroll', close, true);
-    window.addEventListener('resize', close);
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close();
+    const onScroll = (e: Event) => {
+      const target = e.target as Node | null;
+      if (innerRef.current && target && innerRef.current.contains(target)) return;
+      updatePosition();
     };
+    const onResize = () => updatePosition();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onRequestClose?.();
+    };
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onResize);
     window.addEventListener('keydown', onKey);
     return () => {
-      window.removeEventListener('scroll', close, true);
-      window.removeEventListener('resize', close);
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onResize);
       window.removeEventListener('keydown', onKey);
     };
-  }, [open, onRequestClose]);
+  }, [open, onRequestClose, updatePosition]);
 
   return (
     <Portal>

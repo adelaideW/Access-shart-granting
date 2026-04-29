@@ -66,12 +66,22 @@ export function HoverTooltip({
     closeTimer.current = setTimeout(() => setOpen(false), 50);
   };
 
-  const updatePosition = useCallback(() => {
+  const getWrapRect = () => {
     const wrap = wrapRef.current;
-    const tip = tipRef.current;
-    if (!wrap || !tip || !open) return;
+    if (!wrap) return null;
+    const r = wrap.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) return r;
+    const first = wrap.firstElementChild as HTMLElement | null;
+    if (first) return first.getBoundingClientRect();
+    return r;
+  };
 
-    const rect = wrap.getBoundingClientRect();
+  const updatePosition = useCallback(() => {
+    const tip = tipRef.current;
+    if (!tip || !open) return;
+
+    const rect = getWrapRect();
+    if (!rect) return;
     const tw = tip.offsetWidth;
     const th = tip.offsetHeight;
     const offset = 8;
@@ -125,14 +135,22 @@ export function HoverTooltip({
 
   useEffect(() => {
     if (!open) return;
-    const close = () => setOpen(false);
-    window.addEventListener('scroll', close, true);
-    window.addEventListener('resize', close);
-    return () => {
-      window.removeEventListener('scroll', close, true);
-      window.removeEventListener('resize', close);
+    const onScroll = (e: Event) => {
+      const target = e.target as Node | null;
+      const wrap = wrapRef.current;
+      const tip = tipRef.current;
+      if (tip && target && tip.contains(target)) return;
+      if (wrap && target && wrap.contains(target)) return;
+      updatePosition();
     };
-  }, [open]);
+    const onResize = () => updatePosition();
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [open, updatePosition]);
 
   useEffect(() => {
     return () => {
@@ -146,6 +164,7 @@ export function HoverTooltip({
       <span
         ref={wrapRef}
         className={wrapperClassName}
+        style={wrapperClassName ? undefined : { display: 'contents' }}
         onMouseEnter={scheduleOpen}
         onMouseLeave={scheduleClose}
         onFocus={scheduleOpen}
