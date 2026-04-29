@@ -1800,7 +1800,7 @@ export default function App() {
         <div ref={peopleRowsScrollRef} className="min-h-0 flex-1 overflow-y-auto px-6 py-0">
           <div className="rounded-xl border border-gray-200 overflow-visible">
             <div className="sticky top-0 z-[1250] bg-white">
-              <div className="flex items-center justify-between border-b border-gray-200 px-3 py-3">
+              <div className="flex items-center justify-between px-3 py-3">
                 <div className="flex min-w-0 items-center gap-2">
                   <h2 className="text-lg font-semibold text-gray-900">People with access</h2>
                   <HoverTooltip
@@ -2235,7 +2235,7 @@ export default function App() {
 
         {/* General access — Google Drive–style scope + optional link role */}
         {(viewMode === 'advanced' || viewMode === 'advanced2') && (
-          <div className="shrink-0 px-6 py-4 border-t border-gray-100">
+          <div className="shrink-0 px-6 py-4">
             <h2 className="text-base font-semibold text-gray-900 mb-3">General access</h2>
             <div
               ref={generalScopeDropdownRef}
