@@ -1883,20 +1883,9 @@ export default function App() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
-                            className="absolute left-0 top-full z-[250] mt-2 w-72 max-h-[240px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-2 shadow-2xl"
+                            className="absolute left-0 top-full z-[1100] mt-2 w-72 max-h-[240px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-2 pb-6 shadow-2xl"
                             onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
                           >
-                              <button 
-                                type="button"
-                                onClick={() => updateRole(person.id, 'Owner')}
-                                data-menu-item="true"
-                                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors group"
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-sm font-medium text-gray-900">Owner</span>
-                                  {person.role === 'Owner' && <CheckCircle2 className="w-4 h-4 text-[#7A005D] shrink-0" />}
-                                </div>
-                              </button>
                               <button 
                                 type="button"
                                 onClick={() => updateRole(person.id, 'Editor')}
@@ -1978,7 +1967,7 @@ export default function App() {
                                   {person.expirationDate ? 'Remove expiration' : 'Add expiration'}
                                   <span className="relative inline-flex items-center group/exp-help">
                                     <HelpCircle className="h-3.5 w-3.5 text-gray-400" />
-                                    <span className="pointer-events-none invisible absolute left-0 top-full z-[500] mt-2 w-[340px] rounded-lg border border-gray-200 bg-white p-2 text-xs leading-relaxed text-gray-700 opacity-0 shadow-xl transition-all group-hover/exp-help:visible group-hover/exp-help:opacity-100">
+                                    <span className="pointer-events-none invisible absolute left-0 top-full z-[1200] mt-2 h-auto w-[340px] whitespace-normal break-words rounded-lg border border-gray-200 bg-white p-2 text-xs leading-relaxed text-gray-700 opacity-0 shadow-xl transition-all group-hover/exp-help:visible group-hover/exp-help:opacity-100">
                                       Once access expires, this group will no longer be able to access the document. If the artifact is currently set to "Company-wide" or "Anyone with the link," it will automatically switch to "Restricted" after expiration.
                                     </span>
                                   </span>
@@ -2199,7 +2188,7 @@ export default function App() {
                           initial={{ opacity: 0, y: 4 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 4 }}
-                          className="absolute left-0 top-full mt-1.5 z-[250] w-[240px] max-h-[240px] overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-2xl py-1"
+                          className="absolute left-0 top-full mt-1.5 z-[1100] w-[240px] max-h-[240px] overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-2xl py-1"
                           onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
                         >
                           {(
@@ -2282,25 +2271,9 @@ export default function App() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
-                            className="absolute right-0 top-full z-[250] mt-2 w-72 max-h-[240px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-2xl"
+                            className="absolute right-0 top-full z-[1100] mt-2 w-72 max-h-[240px] overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 pb-6 shadow-2xl"
                             onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
                           >
-                              <button
-                                type="button"
-                                data-menu-item="true"
-                                onClick={() => {
-                                  setGeneralLinkAccessRole('Owner');
-                                  setGeneralRoleDropdownOpen(false);
-                                }}
-                                className="group w-full px-4 py-3 text-left transition-colors hover:bg-gray-50"
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-sm font-medium text-gray-900">Owner</span>
-                                  {generalLinkAccessRole === 'Owner' && (
-                                    <CheckCircle2 className="h-4 w-4 shrink-0 text-[#7A005D]" />
-                                  )}
-                                </div>
-                              </button>
                               <button
                                 type="button"
                                 data-menu-item="true"
@@ -2395,7 +2368,7 @@ export default function App() {
                                   {generalLinkExpirationIso ? 'Remove expiration' : 'Add expiration'}
                                   <span className="relative inline-flex items-center group/general-exp-help">
                                     <HelpCircle className="h-3.5 w-3.5 text-gray-400" />
-                                    <span className="pointer-events-none invisible absolute left-0 top-full z-[500] mt-2 w-[340px] rounded-lg border border-gray-200 bg-white p-2 text-xs leading-relaxed text-gray-700 opacity-0 shadow-xl transition-all group-hover/general-exp-help:visible group-hover/general-exp-help:opacity-100">
+                                    <span className="pointer-events-none invisible absolute left-0 top-full z-[1200] mt-2 h-auto w-[340px] whitespace-normal break-words rounded-lg border border-gray-200 bg-white p-2 text-xs leading-relaxed text-gray-700 opacity-0 shadow-xl transition-all group-hover/general-exp-help:visible group-hover/general-exp-help:opacity-100">
                                       Once access expires, this group will no longer be able to access the document. If the artifact is currently set to "Company-wide" or "Anyone with the link," it will automatically switch to "Restricted" after expiration.
                                     </span>
                                   </span>
@@ -2479,7 +2452,7 @@ export default function App() {
             </div>
 
             {/* Bulk Add Content */}
-            <div className="flex-1 p-8 overflow-y-auto">
+            <div className="flex-1 p-8 pb-40 overflow-y-auto overflow-x-visible">
               <div className="w-full">
                 <div className="border border-gray-200 rounded-2xl p-6 bg-white shadow-sm">
                   <p className="text-sm text-gray-600 mb-4">
@@ -2490,7 +2463,7 @@ export default function App() {
                       placeholder="Paste details here"
                       value={bulkInputValue}
                       onChange={(e) => setBulkInputValue(e.target.value)}
-                      className="w-full h-48 p-4 bg-transparent outline-none resize-none text-gray-700 placeholder-gray-400"
+                      className="w-full min-h-[80px] h-[80px] p-4 bg-transparent outline-none resize-y text-gray-700 placeholder-gray-400"
                     />
                     <div className="absolute right-4 bottom-4 flex items-center gap-2">
                       <button
@@ -2515,7 +2488,7 @@ export default function App() {
                     </div>
                   </div>
                   {bulkImportRows.length > 0 && (
-                    <div className="relative z-[60] mt-5 overflow-visible rounded-xl border border-gray-200">
+                    <div className="relative z-[70] mt-5 overflow-visible rounded-xl border border-gray-200">
                       <table className="w-full table-fixed border-separate border-spacing-0 text-left">
                         <colgroup>
                           <col style={{width: '36%'}} />
@@ -2564,7 +2537,8 @@ export default function App() {
                                   <div className="relative w-full max-w-[min(100%,28rem)]" data-people-selector="true">
                                     <div className="relative">
                                       <input
-                                        value={row.query || matched?.fullName || (row.matchedPersonId === null ? 'Send to external user' : '')}
+                                        value={row.query || matched?.fullName || ''}
+                                        placeholder="Send to external user"
                                         onFocus={() =>
                                           setBulkImportRows((prev) =>
                                             prev.map((item) =>
@@ -2613,7 +2587,7 @@ export default function App() {
                                           animate={{ opacity: 1, y: 0 }}
                                           exit={{ opacity: 0, y: 6 }}
                                           data-bulk-menu={row.id}
-                                          className="absolute left-0 top-full z-[400] mt-2 w-full max-h-[220px] overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-xl"
+                                          className="absolute left-0 top-full z-[1200] mt-2 w-full max-h-[220px] overflow-y-auto rounded-xl border border-gray-200 bg-white p-2 shadow-xl"
                                           onKeyDown={(e) => handleMenuArrowNavigation(e, e.currentTarget)}
                                         >
                                           {row.query.trim() === '' && (
@@ -2655,16 +2629,17 @@ export default function App() {
                                     </AnimatePresence>
                                   </div>
                                 </td>
-                                <td className="whitespace-nowrap px-4 py-3 align-middle text-right">
-                                  <div className="inline-flex items-center justify-end gap-2">
+                                <td className="whitespace-nowrap pl-6 pr-4 py-3 align-middle text-right">
+                                  <div className="inline-flex w-full items-center justify-end gap-2">
                                   {duplicateMatched && (
                                     <div className="relative group/dup-warning" data-bulk-warning="true">
                                       <AlertCircle className="h-4 w-4 text-amber-500" aria-hidden />
-                                      <div className="invisible absolute bottom-full right-0 z-[280] mb-2 w-64 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 opacity-0 shadow-lg transition-all group-hover/dup-warning:visible group-hover/dup-warning:opacity-100">
+                                      <div className="invisible absolute bottom-full right-0 z-[1200] mb-2 h-auto w-64 whitespace-normal break-words rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs leading-relaxed text-gray-700 opacity-0 shadow-lg transition-all group-hover/dup-warning:visible group-hover/dup-warning:opacity-100">
                                         This person has been matched with a different address in the table.
                                       </div>
                                     </div>
                                   )}
+                                  {!duplicateMatched && <span className="h-4 w-4" aria-hidden />}
                                   <button
                                     type="button"
                                     onClick={() => setBulkImportRows((prev) => prev.filter((item) => item.id !== row.id))}

@@ -145,7 +145,7 @@ describe('Bulk add individuals flow', () => {
     await user.click(within(dialog).getByRole('button', {name: 'Import'}));
 
     const externalLabel = /Send to external user/i;
-    const peopleInputs = within(dialog).getAllByDisplayValue(externalLabel);
+    const peopleInputs = within(dialog).getAllByPlaceholderText(externalLabel);
     expect(peopleInputs).toHaveLength(2);
     for (const input of peopleInputs) {
       await user.click(input);
