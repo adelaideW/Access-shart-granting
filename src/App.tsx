@@ -1585,7 +1585,7 @@ export default function App() {
         </div>
 
         {/* Add People Section */}
-        <div className="shrink-0 px-6 pb-6 border-b border-gray-100">
+        <div className="shrink-0 px-6 pb-6">
           <div className="flex gap-3 items-start">
             <div className="relative flex-1" ref={inputRef}>
               <div 
