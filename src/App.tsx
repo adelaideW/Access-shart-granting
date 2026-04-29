@@ -1209,7 +1209,7 @@ export default function App() {
                 <X className="w-6 h-6 text-gray-500" />
               </button>
             </div>
-            <div className="flex flex-1 min-h-0 flex-col gap-5 overflow-hidden px-6 pb-6 pt-6">
+            <div className="flex flex-1 min-h-0 flex-col gap-5 overflow-y-auto px-6 pb-6 pt-6">
               <p className="shrink-0 text-sm text-gray-500 -mt-2">
                 Select people or groups to notify; everyone is selected by default.
               </p>
@@ -2603,7 +2603,7 @@ export default function App() {
                                                   )
                                                 )
                                               }
-                                              className="mb-2 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                              className="mb-2 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none"
                                             >
                                               <span>Send to external user</span>
                                               {!matched && <Check className="h-4 w-4 text-[#7A005D]" />}
@@ -2615,7 +2615,7 @@ export default function App() {
                                               type="button"
                                               data-menu-item="true"
                                               onClick={() => selectBulkMatchedPerson(row.id, personOption)}
-                                              className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50"
+                                              className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-gray-50 focus-visible:bg-gray-50 focus-visible:outline-none"
                                             >
                                               <span className="inline-flex items-center gap-2">
                                                 <img src={personOption.avatar} alt="" className="h-6 w-6 rounded-full object-cover" referrerPolicy="no-referrer" />
@@ -2629,12 +2629,12 @@ export default function App() {
                                     </AnimatePresence>
                                   </div>
                                 </td>
-                                <td className="whitespace-nowrap pl-6 pr-4 py-3 align-middle text-right">
+                                <td className="whitespace-nowrap pl-4 pr-4 py-3 align-middle text-right">
                                   <div className="inline-flex w-full items-center justify-end gap-2">
                                   {duplicateMatched && (
                                     <div className="relative group/dup-warning" data-bulk-warning="true">
                                       <AlertCircle className="h-4 w-4 text-amber-500" aria-hidden />
-                                      <div className="invisible absolute bottom-full right-0 z-[1200] mb-2 h-auto w-64 whitespace-normal break-words rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs leading-relaxed text-gray-700 opacity-0 shadow-lg transition-all group-hover/dup-warning:visible group-hover/dup-warning:opacity-100">
+                                      <div className="invisible absolute bottom-full right-0 z-[1200] mb-2 h-auto w-64 whitespace-normal break-words rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-xs leading-relaxed text-gray-700 opacity-0 shadow-lg transition-all group-hover/dup-warning:visible group-hover/dup-warning:opacity-100">
                                         This person has been matched with a different address in the table.
                                       </div>
                                     </div>
