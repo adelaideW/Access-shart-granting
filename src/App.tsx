@@ -1800,7 +1800,7 @@ export default function App() {
         <div ref={peopleRowsScrollRef} className="min-h-0 flex-1 overflow-y-auto px-6 py-0">
           <div className="rounded-xl border border-gray-200 overflow-visible">
             <div className="sticky top-0 z-[1250] bg-white">
-              <div className="mb-2 flex items-center justify-between border-b border-gray-200 px-3 py-3">
+              <div className="flex items-center justify-between border-b border-gray-200 px-3 py-3">
                 <div className="flex min-w-0 items-center gap-2">
                   <h2 className="text-lg font-semibold text-gray-900">People with access</h2>
                   <HoverTooltip
@@ -1871,7 +1871,7 @@ export default function App() {
                 </div>
               </div>
 
-            <div className={`grid ${gridCols} gap-x-10 border-b border-gray-200 bg-gray-50/95 px-3 py-2 text-sm font-medium text-gray-500 backdrop-blur-sm`}>
+            <div className={`grid ${gridCols} gap-x-10 border-b border-gray-200 bg-gray-50/95 px-3 py-[8px] text-sm font-medium leading-5 text-gray-500 backdrop-blur-sm`}>
               <div className="flex min-w-0 items-center gap-4">
                 <span className="shrink-0">People</span>
               </div>
