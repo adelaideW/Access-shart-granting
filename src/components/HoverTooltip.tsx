@@ -122,6 +122,8 @@ export function HoverTooltip({
   useLayoutEffect(() => {
     if (!open) return;
     updatePosition();
+    const r = requestAnimationFrame(updatePosition);
+    return () => cancelAnimationFrame(r);
   }, [open, updatePosition, content]);
 
   useLayoutEffect(() => {

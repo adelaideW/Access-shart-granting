@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { createPortal } from 'react-dom';
 
 type PortalProps = {
@@ -11,13 +11,7 @@ type PortalProps = {
 };
 
 export function Portal({ children }: PortalProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted || typeof document === 'undefined') {
+  if (typeof document === 'undefined') {
     return null;
   }
 
