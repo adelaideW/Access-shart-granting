@@ -1367,13 +1367,9 @@ export default function App() {
                             });
                           }}
                         />
-                        <div className="flex min-w-0 flex-1 flex-col gap-1.5 text-sm text-gray-800">
-                          {members.map((p) => (
-                            <span key={p.id} className="leading-snug">
-                              {p.names.join(', ')}
-                            </span>
-                          ))}
-                        </div>
+                        <span className="min-w-0 flex-1 break-words text-sm leading-snug text-gray-800">
+                          {members.flatMap((p) => p.names).join(', ') || ''}
+                        </span>
                       </label>
                       )}
                     </div>
@@ -1802,9 +1798,11 @@ export default function App() {
 
         {/* People with access Section */}
         <div ref={peopleRowsScrollRef} className="min-h-0 flex-1 overflow-y-auto px-6 py-0">
-          <div className="sticky top-0 z-[1250] mb-0 flex items-center justify-between border-b border-gray-200 bg-white py-4">
-            <h2 className="text-lg font-semibold text-gray-900">People with access</h2>
-            <div className="flex items-center gap-4">
+          <div className="rounded-xl border border-gray-200 overflow-visible">
+            <div className="sticky top-0 z-[1250] bg-white">
+              <div className="flex items-center justify-between border-b border-gray-200 px-3 py-3">
+                <h2 className="text-lg font-semibold text-gray-900">People with access</h2>
+                <div className="flex items-center gap-4">
               <HoverTooltip
                 placement="top"
                 align="center"
@@ -1852,13 +1850,11 @@ export default function App() {
                 >
                   <Eye className="w-5 h-5" />
                 </button>
-              </HoverTooltip>
-            </div>
-          </div>
+                </HoverTooltip>
+                </div>
+              </div>
 
-          <div className="rounded-xl border border-gray-200 overflow-visible">
-            {/* Table Header */}
-            <div className={`sticky top-[72px] z-[1250] grid ${gridCols} gap-x-10 border-b border-gray-200 bg-gray-50/95 px-3 py-3 text-sm font-medium text-gray-500 backdrop-blur-sm`}>
+            <div className={`grid ${gridCols} gap-x-10 border-b border-gray-200 bg-gray-50/95 px-3 py-2 text-sm font-medium text-gray-500 backdrop-blur-sm`}>
               <div className="flex min-w-0 items-center gap-4">
                 <span className="shrink-0">People</span>
               </div>
@@ -1870,6 +1866,7 @@ export default function App() {
               <div className="flex w-full min-w-0 items-center justify-start gap-1 text-left">
                 Access <HelpCircle className="w-3.5 h-3.5 shrink-0" />
               </div>
+            </div>
             </div>
 
             {/* Table Row */}
