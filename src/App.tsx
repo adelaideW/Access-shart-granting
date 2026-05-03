@@ -46,6 +46,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SnackbarToneIcon } from './components/SnackbarToneIcon.tsx';
 import { PortalMenu } from './components/PortalMenu.tsx';
 import { HoverTooltip } from './components/HoverTooltip.tsx';
+import { PortfolioReturnLink } from './components/PortfolioReturnLink.tsx';
 import {
   DEMO_BULK_DIRECTORY,
   detectBulkIdentifierType,
@@ -1142,6 +1143,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 font-sans relative overflow-auto">
+      <PortfolioReturnLink />
       {/* Snackbar */}
       <AnimatePresence>
         {snackbarMessage && (
